@@ -10,9 +10,14 @@ export interface ClipboardConversationState {
   messages: Message[];
 }
 
-export function messageToClipboard(message: Message, includeDebugContext: boolean): string {
+export function messageToClipboard(
+  message: Message,
+  includeDebugContext: boolean,
+): string {
   if (!includeDebugContext) {
-    return [...formatTurnSourceMarkdown(message), message.content, ""].join("\n");
+    return [...formatTurnSourceMarkdown(message), message.content, ""].join(
+      "\n",
+    );
   }
 
   const lines = [`## ${message.role === "user" ? "You" : "AI"}`, ""];
@@ -35,7 +40,7 @@ export function formatConversationMarkdown(
   frontBlock?: string,
 ): string {
   const item = state.itemID == null ? null : Zotero.Items.get(state.itemID);
-  const title = item?.getField("title") || "未选择条目";
+  const title = item ? item.getField("title") || "未选择条目" : "未选择条目";
   const lines = [
     `# Zotero AI Chat - ${title}`,
     "",
@@ -46,14 +51,7 @@ export function formatConversationMarkdown(
   ];
 
   if (includeDebugContext && systemPrompt) {
-    lines.push(
-      "## System Prompt",
-      "",
-      "```",
-      systemPrompt,
-      "```",
-      "",
-    );
+    lines.push("## System Prompt", "", "```", systemPrompt, "```", "");
   }
 
   if (includeDebugContext && frontBlock) {
@@ -102,7 +100,9 @@ export function formatConversationMarkdown(
 function formatTurnSourceMarkdown(message: Message): string[] {
   if (message.role !== "user") return [];
   const selectedText =
-    message.context?.selectedText || message.task?.pdfSelection?.selectedText || "";
+    message.context?.selectedText ||
+    message.task?.pdfSelection?.selectedText ||
+    "";
   if (!selectedText) return [];
   const pageLabel = message.task?.pdfSelection
     ? pdfSelectionPageLabel(message.task.pdfSelection)
@@ -195,7 +195,8 @@ function paperFrontBlockRecord(
     return null;
   }
   const toolTriggered = context.toolCalls?.some(
-    (tool) => tool.name === "zotero_get_full_pdf" && tool.status === "completed",
+    (tool) =>
+      tool.name === "zotero_get_full_pdf" && tool.status === "completed",
   );
   return {
     chars: context.fullTextChars,
@@ -264,7 +265,10 @@ function formatItemIntroductionMarkdown(
     ["标题", item.getField("title")],
     ["作者", authors.join(", ")],
     ["年份", parseYearString(item.getField("date"))],
-    ["期刊/会议", item.getField("publicationTitle") || item.getField("conferenceName")],
+    [
+      "期刊/会议",
+      item.getField("publicationTitle") || item.getField("conferenceName"),
+    ],
     ["DOI", item.getField("DOI")],
     ["URL", item.getField("url")],
   ].filter(([, value]) => String(value ?? "").trim().length > 0);

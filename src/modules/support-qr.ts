@@ -1,7 +1,8 @@
 import qrcode from "qrcode-generator";
 
 /** Project home, and where a problem should be reported. */
-export const PROJECT_URL = "https://github.com/xuhan-rgb/zotero-ai-sidebar";
+export const PROJECT_URL =
+  "https://github.com/TJR-USTC-HUB/paper-workbench-for-zotero";
 export const PROJECT_ISSUES_URL = `${PROJECT_URL}/issues/new`;
 
 /**

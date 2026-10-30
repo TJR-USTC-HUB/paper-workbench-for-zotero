@@ -128,7 +128,7 @@ describe("Web Agent lifecycle", () => {
       projectRoot: path.resolve("."),
       releaseVersion: addonVersion,
       protocolVersion: 26,
-      repository: "xuhan-rgb/zotero-ai-sidebar",
+      repository: "TJR-USTC-HUB/paper-workbench-for-zotero",
     });
     for (const [name, value] of Object.entries(unzipSync(release.archive))) {
       const target = path.join(runtimeDir, ...name.split("/"));

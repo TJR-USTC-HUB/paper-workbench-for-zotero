@@ -113,11 +113,67 @@ export function updateToolbarOption(mount: HTMLElement, preset: ModelPreset) {
       ".preset-switcher option, .composer-preset-switcher option",
     ),
   ).find((node) => (node as HTMLOptionElement).value === preset.id) as
-    | HTMLOptionElement
-    | undefined;
+    HTMLOptionElement | undefined;
   if (option) {
     option.textContent = presetSelectLabel(preset);
   }
+}
+
+/** Discover model IDs exposed by an OpenAI-compatible endpoint. */
+export async function fetchOpenAIModels(
+  baseUrl: string,
+  apiKey: string,
+  signal: AbortSignal,
+): Promise<string[]> {
+  const base = baseUrl.trim().replace(/\/+$/, "");
+  const secret = apiKey.trim();
+  if (!base) throw new Error("Base URL 为空");
+  if (!secret) throw new Error("API Key 为空");
+
+  const url = base.endsWith("/models") ? base : `${base}/models`;
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${secret}` },
+      signal,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `获取模型列表失败：${message.split(secret).join("[API_KEY]")}`,
+    );
+  }
+  if (!response.ok) {
+    throw new Error(`获取模型列表失败：HTTP ${response.status}`);
+  }
+
+  let payload: unknown;
+  try {
+    payload = await response.json();
+  } catch {
+    throw new Error("获取模型列表失败：响应不是有效 JSON");
+  }
+  const data =
+    payload && typeof payload === "object"
+      ? (payload as { data?: unknown }).data
+      : undefined;
+  const models = Array.isArray(data)
+    ? data
+        .map((entry) =>
+          entry && typeof entry === "object" && "id" in entry
+            ? String((entry as { id?: unknown }).id ?? "").trim()
+            : "",
+        )
+        .filter(Boolean)
+    : [];
+  const unique = [...new Set(models)].sort((left, right) =>
+    left.localeCompare(right, undefined, { numeric: true }),
+  );
+  if (!unique.length) {
+    throw new Error("获取模型列表失败：接口未返回可用模型");
+  }
+  return unique;
 }
 
 export async function testPresetConnectivity(
@@ -140,7 +196,10 @@ export async function testPresetConnectivity(
 
   for await (const chunk of provider.stream(
     messages,
-    promptText("连通性测试。只回复 OK。", "Connectivity test. Reply with OK only."),
+    promptText(
+      "连通性测试。只回复 OK。",
+      "Connectivity test. Reply with OK only.",
+    ),
     testPreset,
     signal,
   )) {
@@ -238,8 +297,7 @@ async function testChatCompletionsFallback(
 }
 
 type OpenAITestResult =
-  | { ok: true }
-  | { ok: false; status: number; body: string };
+  { ok: true } | { ok: false; status: number; body: string };
 
 interface PromptCacheTestOptions {
   promptCacheKey?: string;
@@ -304,7 +362,10 @@ async function requestOpenAIConnectivity(
 ): Promise<OpenAITestResult> {
   const body = {
     model: preset.model,
-    instructions: promptText("连通性测试。只回复 OK。", "Connectivity test. Reply OK only."),
+    instructions: promptText(
+      "连通性测试。只回复 OK。",
+      "Connectivity test. Reply OK only.",
+    ),
     input: [{ role: "user", content: "Reply OK." }],
     ...(includeMaxOutputTokens ? { max_output_tokens: 256 } : {}),
     ...openAIResponsesReasoningBodyParam(preset),
@@ -384,7 +445,10 @@ async function requestPromptCacheOnce(
   );
   const body = {
     model: preset.model,
-    instructions: promptText("提示缓存测试。只回复 CACHE_OK。", "Prompt cache test. Reply CACHE_OK only."),
+    instructions: promptText(
+      "提示缓存测试。只回复 CACHE_OK。",
+      "Prompt cache test. Reply CACHE_OK only.",
+    ),
     input: [
       {
         role: "user",
@@ -500,7 +564,9 @@ function openAIResponsesReasoningBodyParam(preset: ModelPreset): {
   return {
     reasoning: {
       effort,
-      ...(summary === "none" || isDeepSeekReasoningModel(preset) ? {} : { summary }),
+      ...(summary === "none" || isDeepSeekReasoningModel(preset)
+        ? {}
+        : { summary }),
     },
   };
 }

@@ -1,13 +1,35 @@
 import { spawn } from "node:child_process";
 import { writeFile } from "node:fs/promises";
 import http from "node:http";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import {
+  resolveBrowserExecutable,
+  resolveBrowserProfile,
+} from "./dev-browser-paths.mjs";
+
+if (process.argv.includes("--help")) {
+  process.stdout.write(
+    [
+      "Usage: node scripts/live-test-deepseek-agent.mjs",
+      "",
+      "Environment:",
+      "  PAPER_WORKBENCH_BROWSER_PATH     Chromium-based browser executable",
+      "  PAPER_WORKBENCH_BROWSER_PROFILE  Persistent logged-in browser profile",
+      "",
+    ].join("\n"),
+  );
+  process.exit(0);
+}
 
 const agentPort = 23121;
 const callbackPort = 23122;
 const token = "zai-live-deepseek-structure-test";
 const taskID = `live-deepseek-${Date.now()}`;
-const configPath = "/tmp/zai-live-deepseek-config.json";
-const resultPath = "/tmp/zai-live-deepseek-result.json";
+const configPath = path.join(tmpdir(), "zai-live-deepseek-config.json");
+const resultPath = path.join(tmpdir(), "zai-live-deepseek-result.json");
+const projectRoot = fileURLToPath(new URL("..", import.meta.url));
 const prompt = [
   "请先进行思考，然后给出最终回答。",
   "最终回答必须包含：",
@@ -22,9 +44,11 @@ await writeFile(
   JSON.stringify({
     token,
     nodePath: process.execPath,
-    chromePath: "/usr/bin/google-chrome",
-    agentScript: new URL("../web-agent/agent.mjs", import.meta.url).pathname,
-    profileDir: "/home/qwer/.local/share/zotero-ai-sidebar/browser-profile",
+    chromePath: resolveBrowserExecutable(),
+    agentScript: fileURLToPath(
+      new URL("../web-agent/agent.mjs", import.meta.url),
+    ),
+    profileDir: resolveBrowserProfile(),
     port: agentPort,
     callbackUrl: `http://127.0.0.1:${callbackPort}/callback`,
   }),
@@ -48,10 +72,12 @@ const callbackServer = http.createServer(async (request, response) => {
   if (data.state === "completed") finish(data);
   if (data.state === "failed") fail(new Error(data.error || "DeepSeek failed"));
 });
-await new Promise((resolve) => callbackServer.listen(callbackPort, "127.0.0.1", resolve));
+await new Promise((resolve) =>
+  callbackServer.listen(callbackPort, "127.0.0.1", resolve),
+);
 
 const agent = spawn(process.execPath, ["web-agent/agent.mjs", configPath], {
-  cwd: new URL("..", import.meta.url).pathname,
+  cwd: projectRoot,
   stdio: ["ignore", "pipe", "pipe"],
 });
 agent.stdout.on("data", (chunk) => process.stderr.write(chunk));
@@ -139,7 +165,9 @@ async function waitForHealth() {
         headers: { authorization: `Bearer ${token}` },
       });
       if (response.ok) return;
-    } catch {}
+    } catch {
+      // The local Web Agent may still be starting.
+    }
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
   throw new Error("Live Web Agent did not start");

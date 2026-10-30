@@ -103,7 +103,9 @@ describe("Web Agent browser window visibility", () => {
     expect(agent).toMatch(
       /async function openDedicatedBrowser[\s\S]*?await showBrowserWindow\(page\)/,
     );
-    expect(runTask.match(/applyTaskWindowPolicy\(page, task\)/g)).toHaveLength(1);
+    expect(runTask.match(/applyTaskWindowPolicy\(page, task\)/g)).toHaveLength(
+      1,
+    );
     expect(runTask).toContain(
       'await ensureDedicatedBrowserMode(task.hideBrowser ? "headless" : "visible", adapter)',
     );
@@ -149,7 +151,9 @@ describe("Web Agent browser window visibility", () => {
     expect(sidebar).toContain("修复 Web Agent");
     expect(sidebar).toContain("打开 Node.js 下载页");
     expect(sidebar).toContain("打开 ${missing} 下载页");
-    expect(sidebar).toContain('missing === "Google Chrome" || missing === "Microsoft Edge"');
+    expect(sidebar).toMatch(
+      /missing\s*===\s*"Google Chrome"\s*\|\|\s*missing\s*===\s*"Microsoft Edge"\s*\|\|\s*missing\s*===\s*"Firefox"/s,
+    );
     expect(sidebar).toContain("复制 xclip 安装说明");
     expect(sidebar).toContain("https://nodejs.org/en/download");
     expect(sidebar).toContain("https://www.google.com/chrome/");

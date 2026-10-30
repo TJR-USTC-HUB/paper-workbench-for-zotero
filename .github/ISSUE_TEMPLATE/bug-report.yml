@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |-
-        需要英文？请使用[英文表单](https://github.com/xuhan-rgb/zotero-ai-sidebar/issues/new?template=bug-report-en.yml)。
+        需要英文？请使用[英文表单](https://github.com/TJR-USTC-HUB/paper-workbench-for-zotero/issues/new?template=bug-report-en.yml)。
 
         感谢反馈。请尽量填全下面的信息——缺少版本号和复现步骤的问题通常无法定位。
         环境信息不用手打：打开侧边栏右下角的「使用须知」，在最下面点**复制环境信息**，粘到「环境信息」一栏即可。

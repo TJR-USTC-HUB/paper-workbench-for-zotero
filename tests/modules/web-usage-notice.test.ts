@@ -1,4 +1,8 @@
-import { beforeEach as localeBeforeEach, afterEach as localeAfterEach, vi as localeVi } from "vitest";
+import {
+  beforeEach as localeBeforeEach,
+  afterEach as localeAfterEach,
+  vi as localeVi,
+} from "vitest";
 import { describe, expect, it, vi } from "vitest";
 import { version as ADDON_VERSION } from "../../package.json";
 import { renderWebUsageNotice } from "../../src/modules/web-usage-notice";
@@ -35,7 +39,9 @@ describe("WEB usage notice", () => {
   });
 
   it("starts from where the paper material comes from", () => {
-    const items = sectionItems("论文材料从哪来").map((item) => item.textContent);
+    const items = sectionItems("论文材料从哪来").map(
+      (item) => item.textContent,
+    );
 
     expect(items).toHaveLength(3);
     expect(items[0]).toContain("LaTeX 源");
@@ -133,8 +139,8 @@ describe("WEB usage notice", () => {
     ];
 
     const urls = [
-      "https://github.com/xuhan-rgb/zotero-ai-sidebar",
-      "https://github.com/xuhan-rgb/zotero-ai-sidebar/issues/new",
+      "https://github.com/TJR-USTC-HUB/paper-workbench-for-zotero",
+      "https://github.com/TJR-USTC-HUB/paper-workbench-for-zotero/issues/new",
     ];
     expect(links.map((link) => link.href)).toEqual(urls);
     for (const link of links) {
@@ -145,7 +151,10 @@ describe("WEB usage notice", () => {
     // Zotero chrome does not follow anchor navigation, so the click must be
     // routed through launchURL instead of being left to the document.
     links.forEach((link, index) => {
-      const event = new MouseEvent("click", { bubbles: true, cancelable: true });
+      const event = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+      });
       link.dispatchEvent(event);
       expect(event.defaultPrevented).toBe(true);
       expect(launchURL).toHaveBeenNthCalledWith(index + 1, urls[index]);

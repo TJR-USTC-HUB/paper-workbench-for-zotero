@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   detectOpenAIModelTransports,
+  fetchOpenAIModels,
   testPresetConnectivity,
 } from "../../src/modules/preset-utils";
 import type { ModelPreset } from "../../src/settings/types";
@@ -25,22 +26,28 @@ describe("preset connectivity protocol detection", () => {
   it.each([
     ["zh-CN", "连通性测试。只回复 OK。"],
     ["en-US", "Connectivity test. Reply OK only."],
-  ])("localizes the connectivity instruction for %s without changing its reply token", async (locale, instructions) => {
-    vi.stubGlobal("Zotero", { locale: "en-US", Prefs: { get: () => locale } });
-    let body: Record<string, unknown> | undefined;
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
-        body = JSON.parse(String(init?.body)) as Record<string, unknown>;
-        return new Response(null, { status: 200 });
-      }),
-    );
+  ])(
+    "localizes the connectivity instruction for %s without changing its reply token",
+    async (locale, instructions) => {
+      vi.stubGlobal("Zotero", {
+        locale: "en-US",
+        Prefs: { get: () => locale },
+      });
+      let body: Record<string, unknown> | undefined;
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+          body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+          return new Response(null, { status: 200 });
+        }),
+      );
 
-    await testPresetConnectivity(preset, new AbortController().signal);
+      await testPresetConnectivity(preset, new AbortController().signal);
 
-    expect(body?.instructions).toBe(instructions);
-    expect(body?.input).toEqual([{ role: "user", content: "Reply OK." }]);
-  });
+      expect(body?.instructions).toBe(instructions);
+      expect(body?.input).toEqual([{ role: "user", content: "Reply OK." }]);
+    },
+  );
 
   it("prefers Responses then saves Chat Completions when the model rejects Responses", async () => {
     const requests: Array<{ url: string; body: Record<string, unknown> }> = [];
@@ -168,5 +175,98 @@ describe("preset connectivity protocol detection", () => {
       testPresetConnectivity(preset, new AbortController().signal),
     ).rejects.toThrow("HTTP 401");
     expect(urls).toEqual(["https://api.deepseek.com/responses"]);
+  });
+
+  it("discovers, normalizes, deduplicates, and sorts OpenAI-compatible models", async () => {
+    const request = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        expect(String(input)).toBe("https://relay.example/v1/models");
+        expect(init?.method).toBe("GET");
+        expect(init?.headers).toEqual({ Authorization: "Bearer secret-key" });
+        return new Response(
+          JSON.stringify({
+            data: [
+              { id: "gpt-6.1-sol" },
+              { id: " model-10 " },
+              { id: "model-2" },
+              { id: "gpt-6.1-sol" },
+              { id: "" },
+              null,
+            ],
+          }),
+          { status: 200 },
+        );
+      },
+    );
+    vi.stubGlobal("fetch", request);
+
+    await expect(
+      fetchOpenAIModels(
+        "https://relay.example/v1/",
+        "secret-key",
+        new AbortController().signal,
+      ),
+    ).resolves.toEqual(["gpt-6.1-sol", "model-2", "model-10"]);
+    expect(request).toHaveBeenCalledOnce();
+  });
+
+  it("does not append a second models segment", async () => {
+    const request = vi.fn(async (input: RequestInfo | URL) => {
+      expect(String(input)).toBe("https://relay.example/v1/models");
+      return new Response(JSON.stringify({ data: [{ id: "gpt-test" }] }), {
+        status: 200,
+      });
+    });
+    vi.stubGlobal("fetch", request);
+
+    await expect(
+      fetchOpenAIModels(
+        "https://relay.example/v1/models/",
+        "secret-key",
+        new AbortController().signal,
+      ),
+    ).resolves.toEqual(["gpt-test"]);
+  });
+
+  it("reports model discovery failures without exposing the API key", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({ error: "secret-key must not be echoed" }),
+            { status: 401 },
+          ),
+      ),
+    );
+
+    const error = await fetchOpenAIModels(
+      "https://relay.example/v1",
+      "secret-key",
+      new AbortController().signal,
+    ).catch((value: unknown) => value);
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toContain("HTTP 401");
+    expect((error as Error).message).not.toContain("secret-key");
+  });
+
+  it("rejects empty or malformed model lists", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify({ data: [{ id: "" }, {}] }), {
+            status: 200,
+          }),
+      ),
+    );
+
+    await expect(
+      fetchOpenAIModels(
+        "https://relay.example/v1",
+        "secret-key",
+        new AbortController().signal,
+      ),
+    ).rejects.toThrow("接口未返回可用模型");
   });
 });

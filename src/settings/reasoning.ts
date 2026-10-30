@@ -18,7 +18,8 @@ const ENGLISH_EFFORT_LABELS: Record<ReasoningEffort, string> = {
 };
 
 export function localizedReasoningEffortLabel(effort: ReasoningEffort): string {
-  const chinese = REASONING_EFFORT_OPTIONS.find(([value]) => value === effort)?.[1] ?? effort;
+  const chinese =
+    REASONING_EFFORT_OPTIONS.find(([value]) => value === effort)?.[1] ?? effort;
   return uiText(chinese, ENGLISH_EFFORT_LABELS[effort] ?? effort);
 }
 
@@ -57,7 +58,9 @@ function supportedEfforts(preset: ModelPreset): ReasoningEffort[] {
   if (/^gpt-6-astra(?:$|-)/.test(model))
     return ["low", "medium", "high", "xhigh", "max"];
   if (
-    /^gpt-(?:5\.6(?:-(?:sol|terra|luna))?|6-(?:sol|luna))(?:$|-)/.test(model)
+    /^gpt-(?:5\.6(?:-(?:sol|terra|luna))?|6(?:\.1)?-(?:sol|luna))(?:$|-)/.test(
+      model,
+    )
   ) {
     return ["none", "low", "medium", "high", "xhigh", "max"];
   }
@@ -92,7 +95,10 @@ export function reasoningEffortOptionsForPreset(
   return supportedEfforts(preset).map((effort) => [
     effort,
     budget && budgets[effort]
-      ? uiText(`${effort} - 思考预算 ${budgets[effort]} tokens`, `${effort} - Thinking budget ${budgets[effort]} tokens`)
+      ? uiText(
+          `${effort} - 思考预算 ${budgets[effort]} tokens`,
+          `${effort} - Thinking budget ${budgets[effort]} tokens`,
+        )
       : localizedReasoningEffortLabel(effort),
   ]);
 }
@@ -128,9 +134,7 @@ export function effectiveReasoningEffort(
       : undefined;
   return collapseReasoningForPreset(
     preset,
-    perModel ??
-      preset.extras?.reasoningEffort ??
-      DEFAULT_REASONING_EFFORT,
+    perModel ?? preset.extras?.reasoningEffort ?? DEFAULT_REASONING_EFFORT,
   );
 }
 

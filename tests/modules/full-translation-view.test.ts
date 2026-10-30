@@ -185,7 +185,7 @@ describe("renderFullTranslationView", () => {
     expect(body.querySelectorAll(".katex-display")).toHaveLength(1);
     expect(body.querySelectorAll(".katex-error")).toHaveLength(0);
     expect(body.querySelector(".katex-html .mtable")).not.toBeNull();
-    expect(body.querySelector(".katex-html .tag")?.textContent).toContain("2");
+    expect(body.querySelector(".katex-html .katex-tag")?.textContent).toContain("2");
     expect(Array.from(body.childNodes).filter((node) => node.nodeType === 3).map((node) => node.textContent).join("").trim()).toBe("");
     expect(paper.blocks[0].source).toBe(source);
   });

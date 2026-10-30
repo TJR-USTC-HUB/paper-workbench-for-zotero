@@ -1,827 +1,171 @@
-# Zotero AI Sidebar — Usage Guide
+# Paper Workbench for Zotero — User Guide
 
 English | [中文](USAGE.zh-CN.md)
 
-This document targets **end users** and is split in two halves:
+Paper Workbench for Zotero is an unofficial community add-on. It turns the
+Zotero PDF reader into a focused, resizable workspace:
 
-1. **5-Minute Quick Start** — install → configure → ask a question with PDF context → save the answer to a Zotero note.
-2. **Reference Manual** — every feature, organized by task: where to find it, what each field does, and the gotchas worth knowing.
-
-> Install steps and the bare-minimum config are already in [README.md](../README.md); this guide does not repeat them.
-> See [Troubleshooting](#troubleshooting) and [Related docs](#related-docs) at the bottom.
-
----
-
-## Contents
-
-- [1. 5-Minute Quick Start](#1-5-minute-quick-start)
-- [2. Common Workflows](#2-common-workflows)
-  - [2.1 Ask the AI about a section or selection](#21-ask-the-ai-about-a-section-or-selection)
-  - [2.2 Translate a PDF immersively (Immersive mode)](#22-translate-a-pdf-immersively-immersive-mode)
-  - [2.3 Let the AI add highlights / annotations to the PDF](#23-let-the-ai-add-highlights--annotations-to-the-pdf)
-  - [2.4 Use slash commands for arXiv or web search](#24-use-slash-commands-for-arxiv-or-web-search)
-  - [2.5 Distill answers into a paper note](#25-distill-answers-into-a-paper-note)
-  - [2.6 Read arXiv papers with exact equations and figures](#26-read-arxiv-papers-with-exact-equations-and-figures)
-  - [2.7 See the whole paper at a glance (overview map)](#27-see-the-whole-paper-at-a-glance-overview-map)
-  - [2.8 Sync chats and config across devices (WebDAV)](#28-sync-chats-and-config-across-devices-webdav)
-  - [2.9 Back up and migrate config](#29-back-up-and-migrate-config)
-  - [2.10 Use Quick Ask for a temporary multi-turn conversation](#210-use-quick-ask-for-a-temporary-multi-turn-conversation)
-  - [2.11 Read an arXiv paper in full-document translation](#211-read-an-arxiv-paper-in-full-document-translation)
-  - [2.12 Use a built-in website through WEB mode](#212-use-a-built-in-website-through-web-mode)
-  - [2.13 Pick the paper's material (pictures / tables / formulas)](#213-pick-the-papers-material-pictures--tables--formulas)
-  - [2.14 Compare or analyze multiple papers](#214-compare-or-analyze-multiple-papers)
-- [3. Reference Manual](#3-reference-manual)
-  - [3.1 Model presets](#31-model-presets)
-  - [3.2 Sidebar UI map](#32-sidebar-ui-map)
-  - [3.3 Agent tools](#33-agent-tools)
-  - [3.4 Slash commands](#34-slash-commands)
-  - [3.5 PDF immersive translation](#35-pdf-immersive-translation)
-  - [3.6 Quick prompts](#36-quick-prompts)
-  - [3.7 Note-editing panel](#37-note-editing-panel)
-  - [3.8 Screenshots and multimodal input](#38-screenshots-and-multimodal-input)
-  - [3.9 PDF highlight color rubric](#39-pdf-highlight-color-rubric)
-  - [3.10 WebDAV cloud sync](#310-webdav-cloud-sync)
-  - [3.11 Config export / import](#311-config-export--import)
-  - [3.12 Chat history](#312-chat-history)
-  - [3.13 arXiv LaTeX source mode](#313-arxiv-latex-source-mode)
-  - [3.14 Paper overview map & reading routes](#314-paper-overview-map--reading-routes)
-  - [3.15 API and WEB chat modes](#315-api-and-web-chat-modes)
-  - [3.16 Empty-chat signatures](#316-empty-chat-signatures)
-  - [3.17 Material list and picking on the PDF](#317-material-list-and-picking-on-the-pdf)
-  - [3.18 Queues, parallel chats, and usage](#318-queues-parallel-chats-and-usage)
-- [Troubleshooting](#troubleshooting)
-- [Related docs](#related-docs)
-
----
-
-## 1. 5-Minute Quick Start
-
-### Step 1 · Configure your first model preset
-
-Open Zotero `Tools → Plugins`, click the gear icon next to *Zotero AI Sidebar*, and open settings. (Or: open the sidebar with no preset configured — it drops you straight into the "Add preset" form.)
-
-Four fields are required:
-
-| Field | Purpose |
-|---|---|
-| Provider | `anthropic` / `openai` / any OpenAI-compatible endpoint |
-| API key | Stored in Zotero prefs; leaves this machine only inside *your own* WebDAV `state.json` or a config-export file — never to zotero.org or third parties |
-| Base URL | Official endpoint, or your self-hosted reverse proxy |
-| Model | Any model id supported by that endpoint (e.g. `claude-opus-4-7`, `gpt-5`) |
-
-Click **Test connection** — failures fail loudly. Save the preset.
-
-> You can save multiple presets. The sidebar footer shows a switcher you can flip mid-conversation.
-
-### Step 2 · Open the sidebar
-
-The sidebar lives in Zotero's **Item Pane / Reader Context Pane** as the *AI* tab.
-
-Pick any paper in the main library. The sidebar binds to that item — chat history, context traces, and notes are kept per-paper.
-
-### Step 3 · Ask your first question
-
-A solid starter prompt:
-
-```
-Summarize this paper in 5 lines, then call out its core contribution and biggest limitation.
+```text
+PDF paper | Selection translation | Notes + AI chat
 ```
 
-Hit Enter or click **Send**. If the item has a PDF attached, the model will autonomously call `zotero_get_current_item` (for metadata + abstract) and `zotero_get_full_pdf` / `zotero_search_pdf` (for body text). **The tool loop is model-driven — no local keyword routing decides what to fetch.**
+It is not affiliated with or endorsed by Zotero or OpenAI.
 
-### Step 4 · See which tools the AI used
+## 1. Install
 
-Each AI message renders two collapsible blocks above its body:
+The same XPI works on Windows, macOS, and Linux.
 
-- **Thinking** — reasoning summary (when the provider supplies one).
-- **Tool trace** — every `zotero_*` / `paper_*` call this turn, with its arguments and return.
+1. Download `paper-workbench-for-zotero.xpi` from the
+   [latest release](https://github.com/TJR-USTC-HUB/paper-workbench-for-zotero/releases/latest).
+2. In Zotero, open **Tools → Plugins**.
+3. Open the gear menu and choose **Install Plugin From File…**.
+4. Select the XPI and restart Zotero if prompted.
+5. Open a PDF attachment.
 
-`★ Tip — if an answer feels invented, check the trace first. No PDF tool calls means the model never read the paper. Usually that's because (a) max tool iterations is too low, or (b) the item has no PDF attached.`
+The add-on supports Zotero 7–10. Node.js is needed only for development, not
+for normal use.
 
-### Step 5 · Save the answer to a note
+## 2. Sign in to a model endpoint
 
-Two paths:
+The add-on starts signed out. The sign-in view asks for only two values:
 
-1. **Manual** — hover any AI message, click **Copy** or **Save to note** (placement and label are configurable in settings).
-2. **Let the AI write it** — say "append this summary to the note for this paper". The model calls `zotero_append_to_note`; if no child note exists, it creates one automatically.
+- **Base URL** — the `/v1` address of an OpenAI-compatible service.
+- **API Key** — the credential issued by that service.
 
-That closes the loop: **read paper → AI interprets → permanent record in Zotero**.
+There is deliberately no model-ID field on this screen. When you select
+**Sign in**, the add-on:
 
----
+1. requests `GET /models` from the configured endpoint;
+2. chooses `gpt-6.1-sol` when it is available, otherwise the first returned
+   model;
+3. verifies that the selected model can respond; and
+4. stores the endpoint, key, model list, and authenticated state in the current
+   local Zotero profile.
 
-## 2. Common Workflows
+After sign-in, choose a model and a supported reasoning level above the
+composer. Depending on the model, levels may include `low`, `medium`, `high`,
+`xhigh`, and `max`.
 
-### 2.1 Ask the AI about a section or selection
+Select **Sign out** to cancel active requests, remove the saved API key and
+current model selection, and return the AI and translation columns to their
+signed-out state.
 
-Two ways to scope what the AI looks at:
+## 3. Use the three-column workspace
 
-**By default, the whole paper is in context** — the `📄 原文` toggle next to the composer is on. Ask anything, the model sees the full paper. Best for "summarize", "what's the contribution", "compare with related work".
+### Resize the columns
 
-**To focus on a passage**: select text in the Reader. A *selection chip* (with a character-count preview) appears above the composer. Ask your question — the selection is added on top of the pinned paper context, so the model still knows the surrounding context but focuses on what you highlighted.
+- Drag the boundary between the PDF and translation columns.
+- Drag the boundary between the translation and work columns.
+- When a note is open, drag the horizontal boundary between the note and chat.
 
-**To use selection only (no full paper)**: click `📄 原文` to turn pinning off (a one-time dialog explains the trade-off). The toggle is remembered per paper.
+The add-on remembers these sizes for the next session. The columns have minimum
+widths so their contents do not overlap.
 
-**One-turn override**: flip `+ 本轮原文` above the composer to escalate just one question to the full paper, without changing the global setting.
+### Translate a PDF selection
 
-**Watch out for:**
-- Disabling `原文` saves tokens but can leave the model without crucial context for whole-paper questions ("what does this paper conclude" with `原文` off may fail).
-- The selection chip never auto-clears — click × on the chip when you're done with it.
-- The sidebar doesn't re-render when the PDF selection changes; the chip is the only visible signal.
-- Clicking a blank area in the PDF clears both the selection chip and its dashed reference box, keeping the left PDF and right sidebar in sync.
+1. Select an English sentence or paragraph in the open PDF.
+2. The middle column displays the selected source and a large Chinese
+   translation automatically.
+3. Select another passage to replace the source and translation.
 
-### 2.2 Translate a PDF immersively (Immersive mode)
+Translation uses the same signed-in endpoint. Nothing is sent while signed
+out. The translation column shows explicit idle, loading, signed-out, and error
+states.
 
-Best for: first read of a non-native-language paper, or speed-building whole-paper comprehension.
+### Ask about the selected passage
 
-1. Open the PDF in the Reader. Click **沉浸 (Immersive)** on the sidebar toolbar to enter immersive mode. Hovering a sentence shows a "reading" highlight.
-2. **Click** any sentence for an in-place card (original + translation, cheapest path); or **select (or hover)** a sentence and press the **quick-translate key (default Space)** to translate just that sentence.
-3. The card can switch to **interleaved EN/中文** (逐句对照), **key-term linking** (重点词对应), **neighbour context** (结合上下句) and **adaptive width**; the footer lets you **💾 save** the translation as a Zotero highlight annotation (if the sentence already has one, it's shown instead of re-translating) or keep asking (**追问**) for an explanation or examples.
-4. **Enter** advances to the next sentence, **Shift+Enter** goes back; **/** jumps the cursor into the card's 追问 box (Enter is reserved for stepping); **h** collapses the toolbar down to just the composer; **Esc** closes the card while keeping that sentence on the reading highlight, so you can keep stepping.
-5. Click **沉浸** again to exit and return the PDF to normal scroll/select.
+1. Select the exact PDF passage you want to discuss.
+2. Optionally choose a model and reasoning level.
+3. Type a question, or send the default request to explain the selection.
+4. Press Enter to send; use Shift+Enter for a new line.
 
-Tunables and shortcuts: see [§3.5](#35-pdf-immersive-translation).
+The focused chat request contains only the live PDF selection and the current
+question. It does not attach the whole paper, surrounding passages, previous
+turns, web search, tools, or other Zotero items. Earlier messages remain visible
+in the local conversation but are not replayed in the next focused request.
 
-### 2.3 Let the AI add highlights / annotations to the PDF
+The send button is disabled when there is no live selection or while signed
+out.
 
-The model can **actually write** Zotero annotations, not just produce text. These tools are blocked by default — they require **approval or YOLO mode**.
+### Work with notes
 
-Write tools:
+1. Select **Note** in the right-column toolbar.
+2. Choose an existing child note or **New note**.
+3. Edit the note in the upper part of the work column.
+4. Drag the note/chat divider if you need more room.
+5. Select **Close note** when finished.
 
-- `zotero_add_annotation_to_selection` — highlight the current selection in a chosen color, with an optional comment.
-- `zotero_add_text_annotation_to_selection` — add a text-only annotation at the selection.
-- `zotero_annotate_passage` — let the model pick sentences across a larger passage and highlight them in batch.
+The add-on saves the current note before switching notes or closing the note
+surface. When the note closes, chat expands to fill the entire work column.
+Opening, switching, or closing a note does not erase the conversation or the
+composer draft.
 
-Sample prompt:
+## 4. Interface behavior
 
-```
-Read §3 (Method). Highlight in different colors: problem statement,
-method steps, dataset, and headline results.
-```
+- User messages are aligned right; assistant replies are aligned left.
+- Translation and chat use the same warm neutral palette.
+- The focused interface intentionally hides legacy full-paper, queue, web-agent,
+  tool, material, and debug controls.
+- The current model and reasoning strength are chosen in the conversation view,
+  after authentication.
 
-The model first reads context (`zotero_search_pdf` / `zotero_read_pdf_range`), then issues highlight calls. Every write **shows up in the trace** — you can audit or undo retrospectively.
+## 5. Data and privacy
 
-Color mapping: see [§3.9](#39-pdf-highlight-color-rubric).
+- The API key is stored in the current local Zotero profile.
+- Translation sends the selected text to the endpoint you configured.
+- Focused chat sends the selected text and current question to that endpoint.
+- Zotero notes and library data remain managed by Zotero.
+- No API key is embedded in the source, XPI, or release archive.
 
-In **WEB mode**, **🔖 全文重点** sends the paper context to the active web model and asks it to append a structured annotation manifest after its normal reply. The sidebar keeps the complete web reply, recognizes the manifest even when the website wraps it in a JSON code block, locates each verbatim quote in the current PDF with local algorithms, and shows a previewable “PDF annotation draft” card. You can preview or relocate matches before clicking **Save all located entries**. **Explain selection** uses the same path when the web answer includes `建议注释`, so its suggested comments can be reused on the selected passage. Zotero is modified only after an explicit save. This path does not call a model API and does not change the existing API-mode tool, approval, or YOLO behavior.
+Local Zotero profiles and exported configuration backups may contain
+credentials. Do not publish them. Review the privacy and retention policy of
+your endpoint provider before use.
 
-### 2.4 Use slash commands for arXiv or web search
+## 6. Troubleshooting
 
-Type `/` in the composer to surface command suggestions. Two are built-in:
+### Sign-in fails
 
-| Command | Usage | What it does |
-|---|---|---|
-| `/arxiv-search` | `/arxiv-search <query or arXiv URL>` | Tells the model the user explicitly wants arXiv search or paper inspection — model picks the best tool (general search, or the precise arXiv-source tools if the current item has a cached LaTeX source) |
-| `/web-search` | `/web-search <query>` | Calls the built-in web-search tool (provider-side feature; must be enabled in settings) |
+- Confirm that the Base URL includes the service's API prefix, commonly `/v1`.
+- Confirm that the key can call `GET /models` and a compatible Responses or Chat
+  Completions endpoint.
+- Check proxy, VPN, firewall, and certificate settings.
+- If `/models` is unavailable, this focused sign-in flow cannot discover a
+  model automatically.
 
-Slash commands don't run logic locally — they just inject "the user explicitly chose this" into the prompt and let the model decide how to act.
+### No translation appears
 
-### 2.5 Distill answers into a paper note
+- Make sure you are signed in.
+- Select actual PDF text rather than an image-only scanned region.
+- Try a shorter selection and check whether the endpoint is responding.
 
-The note panel is designed as a **work area independent from the chat**: opening, editing, or closing it never re-renders chat, resets composer drafts, or interrupts streaming.
+### The send button is disabled
 
-- **Manual** — open the note panel beside the Reader and edit rich text directly. The underlying engine is Zotero's official `<note-editor>` / `EditorInstance`, so list behavior, Enter/Backspace, focus, and autosave match the rest of Zotero.
-- **AI write** — invoke `zotero_append_to_note`. The tool finds (or creates) the paper's child note and appends.
-- **Hybrid** — let the AI summarize, then hand-edit. Same loop as code review.
+- Keep a live text selection in the current PDF.
+- Verify that sign-in succeeded and a model is selected.
+- Wait for any active response to finish.
 
-### 2.6 Read arXiv papers with exact equations and figures
+### A note did not appear
 
-For arXiv papers, the plugin downloads LaTeX source in the background. Once cached, exact source equations and figures can be read on demand. While downloading, chat preparation uses the local PDF without waiting for the source.
+- Open **Note** and choose the intended child note again.
+- Ensure the current Zotero item is editable.
+- Close the note surface normally so the final save can complete.
 
-**You'll know it's active when** a `LaTeX 源` badge appears next to the paper title in the sidebar.
+## 7. Update or uninstall
 
-**How to use it:**
+To update, install the newer XPI over the existing version and restart Zotero
+if prompted.
 
-- **Ask about an equation by number** — "What does Equation (3) say?" / "Walk me through Eq. 5." The plugin pulls the exact LaTeX of that equation.
-- **Ask about a figure by number** — "Walk me through Figure 2." The figure image appears inline in the chat, and follow-up questions ("what's in the bottom-right of that figure?") still have the image available to vision-capable models.
-- **Ask about a table by number** — "Summarize Table 1." The plugin pulls the table source.
-- **Ask about a section by name** — "Explain the Method section." The plugin fetches just that section instead of the whole paper.
+To uninstall, open **Tools → Plugins**, open the add-on menu, choose **Remove**,
+and restart Zotero if prompted. Sign out first if you want the add-on to clear
+its saved API key. Removing the add-on does not delete Zotero notes or library
+items.
 
-**Watch out for:**
-- Wait for the `LaTeX 源` badge before using source-specific tools or full-document translation; ordinary questions need not wait for the download.
-- Use **numbers** ("Figure 2", "Eq. 3", "Table 1"), not descriptions ("the figure with the loss curves"). The lookup is by number/label.
-- Very old papers or papers where the author chose to withhold source will silently fall back to the PDF flow — your prompt doesn't have to change.
+## 8. Support and license
 
-See [§3.13](#313-arxiv-latex-source-mode) for details on what changes under the hood.
+- [Report a bug or request a feature](https://github.com/TJR-USTC-HUB/paper-workbench-for-zotero/issues)
+- [Project README](../README.md)
+- [Upstream attribution](../NOTICE.md)
 
-### 2.7 See the whole paper at a glance (overview map)
-
-Best for: deciding which sections are worth a close read before you sink time into the PDF, and keeping your place across sessions and machines.
-
-The overview map is the **总览** view — one of three tabs in the note column (`AI 笔记` / `阅读路线` / `总览`). It is *not* a note: it's a generated, clickable map of the paper that lives beside the Reader.
-
-1. Open the note column (toolbar **Open Note**), click the **总览** tab, then **生成总览** in the top-right. The model runs `zotero_outline_pdf` (a cheap whole-paper skeleton — no full-PDF send) then `render_paper_overview`.
-2. You get: a 2–4 sentence **核心讲述**, a **section skeleton grouped by phase** (动机与背景 / 方法 / 验证与结论) with a ≤30-char gist per section and **创新 / 效果锚点** markers, collapsible subsections, and a folded structural **flowchart**.
-3. **Click any section to jump the PDF to it.** The map uses the PDF's embedded outline for an exact scroll-to-top when present, with a text-match fallback otherwise.
-4. The sticky header tracks where you are: `↩ 在读 N` jumps back to your reading anchor, `↶ 返回 N` steps back through where you've been (and moves the PDF too), and the **🔒 lock** lets you browse other sections without moving your `在读` anchor.
-5. **`↗ 浏览器`** opens the full overview as a standalone HTML page in your system browser. The overview is also auto-saved as a child HTML attachment on the item, so it rides Zotero's own sync.
-
-**Your reading position is remembered and synced.** Each paper's `在读` anchor survives restarts and travels in `state.json` (WebDAV).
-
-> **Reading routes (`阅读路线`)** are the note-based cousin: the morphing route button (`生成路线` → `阅读路线` → `更新路线`) generates a reading guide saved into a dedicated *AI 阅读路线* child note. Regenerating overwrites the AI section but preserves your own `「我的补充笔记」`. Use the overview map to *navigate*, the route note to *keep editable prose*.
-
-**Watch out for:**
-- Section jumping relies on the PDF outline / text matching (no SyncTeX), so for sections not in the PDF's own outline the landing spot can be approximate.
-- For non-arXiv PDFs the skeleton uses heuristic heading detection; if it can't find headings it falls back to even-sized windows (the header shows `· 估算分段`).
-- The overview is generated on demand — it never sends the full PDF automatically.
-
-### 2.8 Sync chats and config across devices (WebDAV)
-
-Use case: keep chat history, prompt library, and UI settings consistent between desktop and laptop.
-
-1. In settings, fill in WebDAV endpoint (URL, user, password). Nutstore, self-hosted Nextcloud, anything WebDAV-compatible works.
-2. **Push** packages this machine's state into a single `state.json` and uploads it.
-3. **Pull** downloads `state.json` and overwrites local state.
-4. **Auto sync** is off by default; when enabled, startup and every 10 minutes run download-and-merge, then upload.
-
-What `state.json` contains:
-
-- ✅ Chat threads (per-paper conversations, thinking, tool traces, image metadata)
-- ✅ Model presets **including API keys**, plus UI settings, quick prompts, tool/MCP settings, translation settings
-- ✅ Sentence-translation cache (cached translations for already translated sentences)
-- ✅ PDF annotations (highlight / underline / note / ink), matched by PDF + annotation key, last-write-wins by modified time
-- ✅ Per-item paper overviews and reading positions (the `在读` anchor)
-- ❌ **PDF files are not uploaded** (those go through Zotero File Sync on a separate WebDAV path)
-- ❌ The **WebDAV account password** is never written into `state.json`
-
-Because `state.json` carries your keys, the WebDAV endpoint is yours to protect — it's your own server, never zotero.org or the plugin author.
-
-`★ Three-layer split` — (1) zotero.org for library metadata, (2) Zotero File Sync for PDFs over WebDAV, (3) this plugin for `state.json` over WebDAV. The three layers are decoupled; killing one does not break the others.
-
-### 2.9 Back up and migrate config
-
-If you don't want WebDAV, plain export/import works:
-
-- **Export** writes a JSON file with model presets (**API keys included**), UI settings, quick prompts, tool/MCP settings, and translation settings.
-- **Import** loads that JSON on the new machine — keys come across too, nothing to re-enter.
-- Because the file holds your keys, keep it private: don't paste it into a public issue or a shared drive.
-
-### 2.10 Use Quick Ask for a temporary multi-turn conversation
-
-Use this when you want to ask a few questions without switching or adding noise to the current paper's research chat. You can also select text in the PDF or full-document translation view first and ask about that passage.
-
-1. Press `Alt+Q` by default. Remap it under `Settings → Immersive reading → Quick Ask`; the shortcut is ignored while focus is inside an editable field.
-2. If PDF text or full-translation source text was selected before opening, Quick Ask attaches it to the first turn. Without a selection, the model can still use read-only tools to inspect the current paper when needed.
-3. Ask the first question. After the answer, a compact **Continue asking** composer stays at the bottom. Later requests include the completed turns from this popup, so follow-ups such as “why?”, “give another example”, and “how could this claim be verified?” work directly.
-4. Click the model summary or **Model settings** to change the account, model, and reasoning effort. The first use follows the active AI-chat model; later Quick Ask remembers its own selection without changing the research chat or translation defaults.
-5. **Copy** copies only the latest answer. **Transfer to research chat** writes every turn from this popup into the current paper's research chat, then closes Quick Ask.
-
-Quick Ask does not read saved research-chat history and exposes no write tools. Press `Esc`, use the close button, or click the backdrop to destroy the entire temporary conversation; reopening starts a new one.
-
-### 2.11 Read an arXiv paper in full-document translation
-
-When the current paper shows the `LaTeX 源` badge, click **全文翻译 (Full translation)** beside it to open a reconstructed full-paper reader. Papers with LaTeX source still use that rebuild.
-
-Ordinary PDFs, and arXiv items without source, are parsed with MinerU when you open the PDF (set the token under AI Chat Settings → MinerU document parsing, below Accounts and models). **全文翻译** appears only after the badge shows **PDF 已解析**; opening it uses the cached parse and does not call MinerU again. The PDF is uploaded to mineru.net. If you do not have a token yet, apply at [mineru.net/apiManage/token](https://mineru.net/apiManage/token).
-
-- Use **中英 / 中文 / 英文** for bilingual / translation / source display, and **左右 / 逐段** for parallel / interleaved layout. **阅读设置** controls font size, line height, font family, sentence markers, and the line-break style. With **逐段** layout and **按句换行**, each translated sentence sits directly under its source sentence. When the two sides break into a different number of sentences, the translation stays as one block under the paragraph.
-- For ordinary PDFs, **PDF 对照** shows the original PDF page beside the parsed text or translation. Click a paragraph to locate its PDF region, or click a region box to locate the paragraph. Page controls support paging and zoom. Outside comparison mode, only the **核对 PDF 原文** button expands a crop of the original PDF; ordinary clicks on source text or translations do not open it. Existing cached page coordinates are reused; blocks without coordinates report that precise location is unavailable. LaTeX reading is unchanged.
-- Click the model name in the progress bar to open **Account / Model / Reasoning effort** selectors. The first use inherits the **Default translation model** from settings; after a change, full-document translation remembers an independent global selection and does not modify the immersive-reading default.
-- **开始翻译 (Start)** translates pending blocks. After interruption it becomes **继续翻译 (Continue)** without clearing completed work; use **重新翻译 (Retranslate)** only when you want to rebuild all translations.
-- The full-translation view can stay beside the AI sidebar. Select source or translated text and press `Alt+Q` to start a temporary multi-turn Quick Ask about it.
-- Click **返回 PDF (Back to PDF)** to exit the full-translation reader.
-
-#### Complete algorithms, figures, and cached translations (v0.8.9)
-
-1. Use **Full translation** from the LaTeX source when it exists. Ordinary PDFs can use the same button after a MinerU token is set. Sentence-level reading still uses immersive mode.
-2. Choose **英文** for reconstructed source or **中文** for translation. In bilingual **左右** mode, the complete algorithm is shown side by side; **逐段** shows the complete source algorithm followed by its complete translation.
-3. Fragments of one `algorithm` environment share one visual region. Completed translations remain cached; pending fragments show their status. Use **Continue translation** to finish them without retranslating everything.
-4. Comments retain delimiters such as `/* Figure 2(a) */`, and loops/branches retain indentation. A Figure reference inside a comment does not insert an image there; images appear in their corresponding Figure blocks.
-5. Images load from local LaTeX assets and show loading or error states. EPS previews are currently unsupported. Complex macros, typography, and layout may differ from the original PDF; use **Return to PDF** to compare.
-
-#### Configure a failed LaTeX download
-
-Click **代理设置 (Proxy settings)** beside the paper title:
-
-- **System proxy** reads the operating system configuration. Its port follows system changes unless you edit **Port** to save a LaTeX-only override. Use **Restore system port**, then save, to remove the override.
-- **No proxy** connects directly for LaTeX downloads.
-- **Save and retry** retries the download. Settings apply to all papers on this machine and do not change model API or WEB website networking. PAC scripts are currently unsupported.
-
-Downloads run in the background; chat preparation does not wait for them. Attaching full PDF text still follows the current turn's context controls. **Stop** can cancel the current answer while context is being prepared.
-
-### 2.12 Use a built-in website through WEB mode
-
-WEB mode mirrors a real AI website into the Zotero conversation. It is useful when you want to use a website account instead of an API key. API mode remains independent and does not need Chrome or the companion process.
-
-> **WEB mode does not send the paper's figures by default.** The attached paper material is text: cached LaTeX source, or the Markdown parsed by MinerU. Figure captions travel with the text, but the image files themselves do not, so the web model cannot see diagrams or page layout. Tables are text and remain readable. The local full-translation view is unaffected and still shows images. When a question depends on a figure, attach one yourself with `＋ → 截图 / 图片`, or type `@` to pick the paper's pictures, tables, and formulas: picked pictures are really uploaded with that message, while tables and formulas are inserted as a short `[表 #1]` marker that is expanded to LaTeX source when you send. The **使用须知** entry next to the send button lists the same differences.
-
-> The automatic port allocation, Z.ai support, and login detection described here apply to `v0.8.9`. When upgrading, install the new XPI and follow the account dialog to install or update its paired Web Agent ZIP.
-
-**One-time installation (Windows / Linux / macOS):**
-
-1. Install Node.js 20 or newer and Google Chrome. Linux additionally needs `xclip`:
-
-   ```bash
-   sudo apt install xclip
-   ```
-
-2. Install the XPI. In the composer footer select **WEB**, choose **ChatGPT**, **DeepSeek**, **ChatGLM**, **Z.ai**, or **Kimi**, then click **Account**.
-3. The account dialog checks the environment automatically. When Node.js or Chrome is missing it provides an official download button; when Linux `xclip` is missing it provides copyable installation guidance. The plugin never runs an installer or system command. After resolving the dependency, click **Check environment again**, then use **Install**, **Repair**, or **Upgrade Web Agent** as shown. The plugin downloads the matching prebuilt runtime from the version's GitHub Release, verifies its size and SHA-256, and continues only after the protocol and health check pass. The user's computer does not run npm. If automatic download fails, open or copy the provided link, download the ZIP in a browser, and select it in the same dialog.
-4. Sign in to the selected website in the dedicated Chrome, then choose **Finish and hide** or **Finish and keep visible**. **Hide browser in the background while chatting** is checked by default. Z.ai guests can use text chat; attachments require login. Z.ai login is detected automatically without closing Chrome first.
-
-Web Agent has no independent release version and uses the ZIP paired with the current XPI. Installation and explicit updates verify the ZIP size and the checksum embedded in the XPI, then record the installed checksum. After an XPI update, the recorded checksum is compared once; an identical package is reused. Normal startup, opening WEB mode, and sending messages do not download archives, scan files, or recompute checksums; only local health checks run. Legacy installations without a recorded checksum need the paired package installed once. Failed updates preserve existing files and login settings without enabling an unmatched old package.
-
-The updated Web Agent lets the OS assign an unused port at startup, avoiding fixed-port conflicts with MCP and other plugins. After binding, the Agent writes its actual `port` to `zai-web-agent-config.json` in the Zotero data directory; the XPI reads it automatically. The dedicated Chrome also uses a dynamically selected debugging port, recorded in `DevToolsActivePort` inside its profile. For Z.ai, the Agent selects a free port before launching Chrome and retries a limited number of times if another process claims it. There is no need to increment port numbers manually. Callbacks continue to use Zotero's existing HTTP service. On normal Zotero exit or AI Sidebar disable, the plugin requests shutdown of its own Agent. Switching to API mode alone does not interrupt active WEB tasks. Older runtimes need an upgrade to receive this port allocation fix.
-
-**ChatGLM and Z.ai account setup:**
-
-- **ChatGLM (`chatglm.cn`)**: the domestic entry no longer carries a fixed restriction label. If the website actually shows access verification, the account dialog still reports that state.
-- **Z.ai (`chat.z.ai`)**: a separate website entry with its own login and conversation records. Sign in on that website; Chrome account sync is not required, and your everyday Chrome login profile is not inherited automatically.
-- **Read the live status**: the status box at the top of the account dialog checks for guest, signed-in, or not-ready states, scheduling another check about one second after each check finishes. The explanatory text below is selected for the task when the dialog opens and does not change with login state. Use the status box and Z.ai page to check login, rather than the Chrome avatar alone.
-- **Guests and attachments**: a guest-ready status permits text chat. A task containing a paper or another attachment requires login. Once signed in is detected, choose **Finish and hide** or **Finish and keep visible** to complete setup and resume the original question.
-- **Keep the session**: Z.ai login and chat reuse the same dedicated Chrome; hiding minimizes it. If opening Z.ai would replace a browser used by another WEB task, complete or cancel that task first.
-
-**Daily use:**
-
-1. Select **WEB** and the destination service. The service menu also lists saved custom sites and **Manage third-party web pages…**. Opening the manager does not change the active service.
-2. Ask normally and press Enter or click the send arrow. Both use the same live account check; if the selected website is not ready or the task requires login, the sidebar asks you to open **Account**. Z.ai guests can send text tasks without attachments. The sidebar then reports preparation, upload, submission, generation, and synchronization progress; growing website answers are mirrored incrementally instead of appearing only at the end.
-3. Paper-reading tasks attach the current paper automatically through the website's real file input. A cached LaTeX main file is preferred when available; with no source, the Markdown parsed by MinerU (`full.md`) is sent once parsing has finished, and the PDF is used only while parsing is still pending. If a conversation starts before parsing finishes (its first message carried the PDF), the next message automatically switches to the Markdown. The uploaded Markdown is **plain text**: figures appear only as relative `images/…` paths and the image files themselves are not uploaded, so the web model cannot see figures or page layout (text, LaTeX formulas, and HTML tables are unaffected, and the local full-translation view still shows images). When a question depends on a figure, attach one with `＋ → 截图 / 图片`, or type `@` to pick pictures, tables, and formulas; picked pictures are uploaded with that message, and tables/formulas insert a short `[表 #1]` marker that expands to LaTeX source on send, so the input box is not filled with table code. For arXiv items, a separate TXT attachment contains only the section hierarchy, numbers, and titles—not Zotero tool instructions or section bodies. If a site has no usable file input, the task fails explicitly instead of flashing the browser and using clipboard fallback.
-4. Ask for **whole-paper highlights** or **selection explanation** when you want annotation suggestions. The prompt tells the web model how to return the structured manifest; the plugin parses it from the normal answer and builds a local draft. Review the matched page and quote before saving.
-5. A generated website file is exposed only when the site provides a real attachment or downloadable URL. A textual `sandbox:/...` path is not a downloadable file.
-
-Press `Esc` or the composer **Stop** button to cancel a running WEB task. Any answer already mirrored into Zotero is kept and marked as cancelled; retrying the message uses the same website again. Login, quota, server, and unsupported-upload notices detected on the website are shown as error responses instead of being mistaken for normal answers.
-
-The Web Agent uses a dedicated Chrome profile and a random localhost bearer token. It does not read your normal Chrome profile. ChatGLM and Z.ai keep their sessions in a minimized window when hidden. Other services close the visible window after setup and start headless Chrome as needed for background tasks, still running the real website. Zotero does not change the site's fast/deep-thinking/search switches; the current website state is authoritative.
-
----
-
-### 2.13 Pick the paper's material (pictures / tables / formulas)
-
-You do not need screenshots for the paper's figures, tables, and formulas: type `@` to open the material list, or click 素材 and pick them on the left PDF.
-
-**How to use it:**
-
-- **The `@` list**: typing `@` opens the material list with **本页 / 全部 / 图片 / 表格 / 公式** as the scope row, starting with the page you are reading (for a LaTeX paper the page is resolved from the rendered Figure / Table numbers). Hover a row to see where that material sits in the PDF.
-- **Picking on the PDF**: click 素材 left of the composer (or press the default `Ctrl+Shift+M`), then click a picture, table, or formula on the left page; click 素材 again — or pick one item — to leave. Picking the same kind again stacks them (Figure 1 + Figure 2).
-- **What actually travels**: a picked picture is sent as an image; a table or formula only leaves a short `[表 #1]` / `[公式 #2]` marker in the composer and expands to the full LaTeX source when you send, so the input box is never filled with table code. Remove a marker with its × at any time.
-
-**Details worth knowing:**
-
-- Material taken from the LaTeX source (say `figure2.pdf`) has no position in the PDF: 素材 opens the list instead of arming picking, and clicking the PDF only pops a hint.
-- A page that can only be bounded between its neighbours is written `第 N–M 页·推测`; before the reader's page text is ready the list explains why, and reopening it later resolves the pages.
-- Where the material comes from, how API and WEB differ, and where to rebind the 素材 shortcut are all in the **使用须知** chip right of `原文`.
-- While picking is active the left page's text is locked, so prose cannot be grabbed into a quote by accident. Full rules: [§3.17](#317-material-list-and-picking-on-the-pdf).
-
-### 2.14 Compare or analyze multiple papers
-
-Open the paper you are reading, type `@` in the composer, and switch the picker from **本篇素材** to **Zotero 文章**. **同目录** lists papers from the current paper's collection; **全库搜索** searches the current Zotero library by title or author. Pick each reference you need, then write the question, for example `@[Paper A] @[Paper B] Compare these papers with the current paper` or `@[Paper A] Use this paper to analyze the current paper's method`. You can include several references in one question. Deleting an `@[title]` marker removes that reference from the request.
-
-The wording of your question determines whether the model compares papers or uses them to analyze the current one. In **API** mode, each referenced paper's metadata and complete readable original text accompany the question separately from the current paper; the model can also use the referenced-paper reading tool. In **WEB** mode, each reference is uploaded as its own TXT attachment, separate from the current paper and conversation history. If a reference has no readable full text, only its metadata and any available abstract are sent. The plugin does not impose a character cap on readable referenced-paper text in either mode; the chosen model or website may still limit its context or uploaded files.
-
-## 3. Reference Manual
-
-### 3.1 Model presets
-
-Each preset is a complete `provider + endpoint + model + parameters` set. Save as many as you like, named.
-
-| Field | Required | Purpose |
-|---|---|---|
-| Provider | ✓ | `anthropic` or `openai`; selects the SDK path |
-| Display name | | Shown in the footer switcher |
-| API key | ✓ | Stored in local prefs; included in your own `state.json` and config-export file, never sent to zotero.org / third parties |
-| Base URL | ✓ | Official endpoint or OpenAI-compatible reverse proxy |
-| Model | ✓ | Model id, e.g. `claude-opus-4-7`, `gpt-5` |
-| Max output tokens | | Defaults to 32768 for new presets; existing values are preserved. The endpoint/model must support the chosen limit |
-| Max tool iterations | | A **safety fuse** — the maximum tool-loop steps per turn. **Not a task-routing knob.** Setting it too low makes the model abandon PDF reads partway through |
-| Reasoning effort per model | | Save a separate level for each model; available levels depend on the model and can also be changed in the API footer |
-| Agent permission mode | | Governs write tools: blocked / approval-required / YOLO |
-
-**Test connection** issues a minimal request to validate endpoint + key.
-
-Each preset maintains its own model list — same base URL, different model ids, fast switch.
-
-**Cache test** — the row below the preset list in the account & model card — runs a fixed test passage against a chosen preset and reports the request's cache hit / miss input, output, and hit rate, so you can confirm whether the endpoint really uses prompt caching; the passage is tiny and is only a self-check, not your real usage.
-
-#### Reasoning effort per model
-
-1. Open **Settings**, edit an account preset, and choose a level for each model under **推理强度（按模型）** (per-model reasoning effort), then save the configuration.
-2. During a conversation, choose **API → account → model** in the footer, then click the level beside the model, such as `Medium` or `High`. The compact control shows only the level; its tooltip identifies reasoning effort. Changes here are saved automatically to local Zotero preferences.
-3. Each model within each account preset keeps its own choice. For example, model A can use `Medium` and model B `High`; switching back restores the saved level. The same model in another account preset remains independent.
-
-The table describes the plugin's current selection rules. The selected model's dropdown is the reference for its available levels:
-
-| Case | Default and display behavior |
-|---|---|
-| Recognized GPT / Claude models supporting `medium` | Unconfigured models default to `Medium`, rather than a universal `XHigh` |
-| Supported DeepSeek V4 / Flash / Pro models | Off, `Low`, `High`, and `Max`; there is no `Medium` option, so the default maps to `High` |
-| Existing saved effort | Retained; a model-specific choice takes precedence once set |
-| Unrecognized model or custom alias | Disabled service-default option; no effort parameter is sent |
-| WEB mode | Uses the website's own settings, independently of the API effort control |
-
-Effort and **Reasoning Summary** are separate: effort selects a reasoning level, while Summary controls the returned reasoning summary. Some older Claude models map levels to token budgets, which are shown in settings. Third-party endpoints may support different parameters; check the model ID and endpoint capabilities if a request rejects the setting.
-
-### 3.2 Sidebar UI map
-
-**Remembered width and responsive footer**: drag the chat-pane divider and release it to save the width for the next opening. The reader sidebar and side-by-side layout remember separate widths; temporarily narrowing the window or collapsing the pane does not overwrite them. At composer widths of 600px or less, the account caption shows just the name, such as `deepseek1` instead of `deepseek1 (openai)`. Widen it to restore the full caption, or hover/open the dropdown to inspect the protocol. Footer controls can still wrap when space is insufficient.
-
-Top to bottom:
-
-```
-┌───────────────────────────────────────────────┐
-│  [打开笔记] [沉浸] [设置] [🎚] [调试]          │  ← toolbar
-├───────────────────────────────────────────────┤
-│  Paper title  [LaTeX 源]                      │  ← metadata (badge on arXiv items)
-├───────────────────────────────────────────────┤
-│  AI: ...                                       │  ← message stream
-│  ┌─ Thinking (collapsed) ─┐                    │
-│  └────────────────────────┘                    │
-│  ┌─ Tool trace (collapsed) ─┐                  │
-│  └──────────────────────────┘                  │
-│  You: ...                                      │
-├───────────────────────────────────────────────┤
-│  [📎 Selection: "..." × ]                     │  ← chip (selection / images)
-│  [素材] [📄 原文] [+ 本轮原文] [🌐 联网]       │  ← material / context toggles
-│  [使用须知]                                    │  ← API vs WEB differences, 素材 key
-│  ┌─────────────────────────┐                   │
-│  │  / ...                   │                   │  ← composer
-│  └─────────────────────────┘                   │
-│   Preset switcher                       [Send] │  ← footer
-└───────────────────────────────────────────────┘
-```
-
-Things to know:
-
-- **Toolbar controls** (left to right):
-  - **打开笔记 (Open Note)** — opens the note column.
-  - **沉浸 (Immersive)** — toggles immersive PDF translation (click a sentence for an in-place card).
-  - **设置 (Settings)** — opens the full Zotero preferences pane for this plugin: model presets / API keys / display / translation / sync.
-  - **🎚** — a slider-icon button; click it to open a small popup with the chat **字号 (font size)** selector.
-  - **调试 (Debug)** — a toggle. When ON, **复制MD** includes the tool context, PDF passages, and thinking; when OFF it copies only the paper intro and the conversation.
-- **`📄 原文` toggle** (on by default): pins the paper's text into every turn. Turn it off for selection-only questions; click `+ 本轮原文` for a one-time full-paper send.
-- **`素材` chip** — click it to pick the paper's pictures, tables, and formulas straight on the left PDF; the default `Ctrl+Shift+M` does the same, while a LaTeX-sourced paper opens the list instead. See [§2.13](#213-pick-the-papers-material-pictures--tables--formulas).
-- **`使用须知` chip** (right of the toggles) — where the paper's material comes from, how it is sent in API vs WEB mode, and where to rebind the 素材 key.
-- **`@` in the composer** — opens the paper's material list (本页 / 全部 / 图片 / 表格 / 公式); see [§3.17](#317-material-list-and-picking-on-the-pdf).
-- **`LaTeX 源` badge** appears next to the title when the paper is being read from its arXiv LaTeX source. Equations come out exact. See [§3.13](#313-arxiv-latex-source-mode).
-- **Note column tabs** (via **Open Note**): `AI 笔记` / `阅读路线` / `总览` — the default note, the reading-route note, and the overview map.
-- **Message UI options** (Settings → Display settings → Message UI): chat layout `原始排版` / `专注模式`, sidebar placement `阅读器侧栏` / `右侧并排`, per-message button position and style, and whether deleting a chat asks for confirmation. See [§3.18](#318-queues-parallel-chats-and-usage).
-- **Queue & parallel** — with queuing on, messages sent during an answer run in order after the current reply; `同时回答的对话数` (2 by default, 1–8) sets how many chats may answer at once. See [§3.18](#318-queues-parallel-chats-and-usage).
-- **Usage line** — each reply footer shows this turn's tokens (cache hit / miss, output, hit rate). It is for checking only, not a billing total, and WEB replies add no stats.
-
-### 3.3 Agent tools
-
-Useful when reading the tool trace — these are the names you'll see.
-
-**Reading the paper (always available):**
-
-| Tool | What it does |
-|---|---|
-| `zotero_get_current_item` | Title, authors, year, abstract, tags |
-| `zotero_get_annotations` | Existing highlights/notes on this paper |
-| `zotero_search_pdf` | Keyword search across the PDF |
-| `zotero_read_pdf_range` | Read a specific page or paragraph range |
-| `zotero_get_full_pdf` | Pull the full PDF text in one call |
-| `zotero_get_current_pdf_selection` | The text you have selected in the Reader |
-| `zotero_get_reader_pdf_text` | Text of the current page |
-| `chat_get_previous_context` | Re-inspect earlier context without spending tokens replaying it |
-| `paper_search_arxiv` | Search arXiv (any paper, not just the current one) |
-| `paper_fetch_arxiv_fulltext` | Fetch full text of an arXiv paper by query/URL |
-| `draw_article_mindmap` | Generate a mindmap of the paper structure |
-| `zotero_outline_pdf` | Cheap whole-paper skeleton (headings, char ranges, first-line previews, figure/table anchors) without reading the full PDF — the first step for an overview |
-| `render_paper_overview` | Render the overview map (核心讲述 + phase-grouped section skeleton + flowchart) into the **总览** view; called after `zotero_outline_pdf` |
-
-**Reading arXiv source** (only visible to the model when the current paper has a cached LaTeX source — see [§3.13](#313-arxiv-latex-source-mode)):
-
-| Tool | What it does |
-|---|---|
-| `arxiv_list_sections` | List the section index (titles, sizes) — cheap way to scout before fetching |
-| `arxiv_get_section` | Fetch one section's body, by name or number |
-| `arxiv_get_equation` | Fetch a numbered equation as exact LaTeX |
-| `arxiv_get_figure` | Fetch a figure by number/label — image is attached as multimodal context |
-| `arxiv_get_table` | Fetch a table by number/label, cleaned from the source |
-| `arxiv_get_bibliography` | Fetch the bibliography |
-
-**Writing to Zotero (blocked by default — needs approval or YOLO mode in the preset):**
-
-| Tool | What it does |
-|---|---|
-| `zotero_add_annotation_to_selection` | Highlight current selection in a chosen color, with optional comment |
-| `zotero_add_text_annotation_to_selection` | Text-only annotation at the selection |
-| `zotero_annotate_passage` | Batch-highlight sentences across a passage |
-| `zotero_append_to_note` | Append content to this paper's child note (creates one if missing) |
-
-Every write call shows up in the tool trace so you can audit (or undo via Zotero's normal annotation list).
-
-### 3.4 Slash commands
-
-Type `/` in the composer to open completion. The two built-in commands:
-
-| Command | Usage | What it does |
-|---|---|---|
-| `/arxiv-search` | `/arxiv-search <query or arXiv URL>` | Signals "I want to search / read arXiv." The model picks the best tool itself — general arXiv search, or the more precise arXiv-source tools when the current item has a cached LaTeX source |
-| `/web-search` | `/web-search <query>` | Signals "I want a web search." The model calls the built-in web-search tool to answer |
-
-**What they are** — slash commands are **explicit shortcuts, not switches, and they run no local logic**. They only inject "the user explicitly chose this action" into your message; the model still decides which tool to call. This is the plugin's Codex-style invariant: **no local keyword router guesses your intent**.
-
-**When to use them** — most of the time you don't need them: as long as the question is clear, the model picks the right tool on its own (e.g. with the **联网 (web)** toggle on, it searches for real-time questions by itself). Their value is **disambiguation** — when a question is off-topic or vague relative to the current paper (e.g. asking about the weather while reading a paper), the model may first hesitate over "should I, and with which tool?"; an explicit `/web-search` makes it **act directly**: fewer detours, fewer repeated calls, fewer tokens.
-
-**Caveats**
-
-- `/web-search` **does not enable web search by itself**. The real gate is the **联网 (web)** toggle at the bottom-left of the composer (or Web search mode in settings). With it off, even `/web-search` only makes the model **honestly say search isn't enabled** rather than faking it.
-- The built-in web search is a **provider-side hosted tool**; if your Base URL doesn't support it, it may not work even with the toggle on.
-- Sending a command with no argument makes the model ask you for a query first.
-
-### 3.5 PDF immersive translation
-
-The **Default translation model** in Settings → Immersive reading controls the account, model, and reasoning effort used by the immersive card. arXiv full-document translation inherits it on first use, then can remember an independent selection from its own toolbar; neither surface overwrites the other. Result position, card size, and the options below apply to the immersive card.
-
-| Setting (Immersive reading) | Meaning |
-|---|---|
-| Single-click opens the card | Off → show a "问 AI / 译" chooser strip first |
-| Neighbour context | Send the previous + next sentence as context for accuracy |
-| Key-term linking | Highlight original ↔ translated key-term pairs, cross-lit on hover |
-| Next / previous keys | Default `Enter` / `Shift+Enter`, remappable |
-| Selection quick-translate key | Default Space; only intercepted when a reading highlight / selection exists, otherwise Space still scrolls |
-| Focus-ask key | Default `/`; with a card open, moves the cursor into the 追问 box (Enter is reserved for stepping) |
-| Collapse toolbar key | Default `h`; folds the card's meta bar + foot button row down to just the composer |
-
-The card can also toggle interleaved EN/中文 and adaptive width; `Esc` closes it and keeps the sentence on the reading highlight.
-
-Use 💾 to save the current translation as a Zotero highlight annotation; if the sentence already has one, reopening shows that saved note instead of re-translating, and saving upserts by key (no duplicate highlights on the same sentence).
-
-While immersive mode is active, Zotero's native selection popup is suppressed to avoid colliding with the card, and returns on exit. Translations are cached by sentence-content hash — translating the same sentence again does not re-call the model.
-
-### 3.6 Quick prompts
-
-A row of **one-click prompts** beside the composer — e.g. *"Summarize"*, *"Explain the method"*, *"Pull out the experimental numbers"*. Each button's label and its prompt template are editable in settings.
-
-Use it to bind your own high-frequency questions to a single click.
-
-The prompt library (built-in templates, custom buttons, and the “generate a suggested annotation after a free-form selection question” toggle) is stored as `zotero-ai-sidebar-quick-prompts.json` in the Zotero data directory — usually `Zotero/` in your home folder, next to PDFs. It is **not** written into `prefs.js`. After an upgrade, the first launch copies any old preference blob into that file and clears the preference only once the write succeeds. Config export/import and WebDAV `state.json` still carry the same prompt library.
-
-### 3.7 Note-editing panel
-
-Target layout: `PDF Reader | Note panel | AI chat`.
-
-- **Engine** — Zotero's official `<note-editor>` / `EditorInstance`. Rich text (headings, lists, links, inline code, blockquotes) behaves identically to Zotero's main note editor.
-- **Decoupled from chat** — opening, closing, or editing the note never re-renders the sidebar, resets composer drafts, or interrupts streaming.
-- **AI writes** — `zotero_append_to_note` finds the paper's child note (or creates one) and appends.
-- **Three tabs** — the note column header switches between `AI 笔记` (the default note that chat "Write to note" appends to), `阅读路线` (a dedicated *AI 阅读路线* reading-guide note; the button morphs `生成路线` → `阅读路线` → `更新路线`), and `总览` (the overview map view — see [§3.14](#314-paper-overview-map--reading-routes)). Regenerating a route overwrites its AI section but keeps your own `「我的补充笔记」`.
-- **`▣ 转为 PDF`** — the note column's `⋯` menu exports the current `AI 笔记` / `阅读路线` / `总览` as a PDF file (the overview and note are first turned into self-contained HTML and then printed); the file name carries the paper title and panel name.
-
-### 3.8 Screenshots and multimodal input
-
-The toolbar **Screenshot** button captures a region of the PDF / Reader and attaches the result to the composer. Capture works on Linux (`gnome-screenshot` / `flameshot` / `import`) and Windows (Snip & Sketch area selection); on other platforms, drag-drop an image file instead. You can also drag-drop image files directly on any platform.
-
-On send, images are passed as **real multimodal inputs** to the provider (not just shown locally). The model must support vision (Claude 3+, GPT-4o/5, etc.).
-
-**arXiv figures count too** — figures pulled by the model from arXiv source appear in the chat and stay available for vision follow-up questions ("what's in the bottom-left of that figure?").
-
-### 3.9 PDF highlight color rubric
-
-Zotero's six default annotation colors are exposed by hex code. This plugin maps each color to a semantic label (background / problem / method / dataset / results / …) and injects the rubric as a natural-language prompt so the model can pick a color when calling `zotero_add_annotation_to_selection`.
-
-The rubric is editable in settings — for a literature review you might switch to *"established / contested / my critique / …"*; the model will follow.
-
-Two related settings sit in the same card: `恢复默认颜色预设` restores the rubric above in one click, and `新增文字` → `默认字号（pt）` sets the font size the `🅣 新增文字` tool writes into the PDF with (range 8–48, saved automatically).
-
-### 3.10 WebDAV cloud sync
-
-| Item | Behavior |
-|---|---|
-| Endpoint | URL + user + password (use an *app password* where the service offers one) |
-| Push | Uploads the current `state.json` |
-| Pull | Downloads `state.json` and overwrites local state |
-| Conflict policy | No automatic merge — last write wins; *you* are the source of truth |
-| Path stability | Threads carry portable keys, so cross-machine migration survives itemID drift |
-
-`★ The plugin uses a different WebDAV path from Zotero's built-in File Sync. Sharing the same WebDAV account is safe.`
-
-### 3.11 Config export / import
-
-| Field | Included |
-|---|---|
-| UI settings (nicknames, avatars, signatures, theme, action-button placement) | ✅ |
-| Model presets | ✅ |
-| API keys (inside the presets) | ✅ — keep the file private |
-| Quick prompts | ✅ |
-| Tool / MCP settings | ✅ |
-| Translation settings | ✅ |
-| Chat history | ❌ (use WebDAV for this) |
-| PDF annotations | ❌ (use WebDAV for this) |
-
-Right tool when you want to *carry config to a new machine but leave conversations behind*.
-
-### 3.12 Chat history
-
-- One thread per paper, bound to itemID (carried across machines via portable thread keys).
-- Stored locally as `zotero-ai-sidebar-chat-history.json` in the Zotero data directory (same folder as quick prompts). Cross-machine copies go through WebDAV `state.json`.
-- Each message preserves: text, thinking (reasoning summary), tool trace, image attachment metadata.
-- **Copy as Markdown** has two modes:
-  - **Clean** — paper intro + dialogue. For sharing or blog posts.
-  - **Debug** — full thinking, context traces, PDF snippets, error logs. For bug reports or auditing model decisions.
-
-### 3.13 arXiv LaTeX source mode
-
-For arXiv papers, the plugin reads from the LaTeX source instead of the PDF text. A `LaTeX 源` badge next to the paper title means this mode is active.
-
-What changes:
-- Equations come out as exact LaTeX, not garble from broken PDF text.
-- Numbered references work — "Eq. (3)", "Figure 2", "Table 1" all map cleanly.
-- Material comes from the source too: the pictures, tables, and formulas in the `@` list are taken from the source, and their page is resolved from the rendered Figure / Table numbers. None of it has a clickable position in the PDF, so 素材 opens the list instead, and a click on the page only pops a hint — see [§3.17](#317-material-list-and-picking-on-the-pdf).
-
-If the paper has no arXiv source available (no arXiv ID, source withheld, download failure), the plugin silently falls back to the PDF flow.
-
-### 3.14 Paper overview map & reading routes
-
-Two related ways to get a structural read on a paper, both reached from the note column header.
-
-**总览 — the overview map** (a generated view, not a note):
-
-| Element | What it is |
-|---|---|
-| `生成总览` / `更新总览` | Top-right button. Generates (or regenerates) the map through `zotero_outline_pdf` → `render_paper_overview`. No automatic full-PDF send |
-| 核心讲述 | A 2–4 sentence summary of what the paper does and its contribution |
-| Section skeleton | Sections in document order, grouped by phase — **动机与背景 / 方法 / 验证与结论** — each with a ≤30-char gist; subsections collapse |
-| 创新 / 效果锚点 | Emphasis markers; `创新` sections call out what is *new*, `效果锚点` marks headline results / SOTA |
-| Structural flowchart | A folded problem → method → result logic diagram |
-| `↩ 在读 N` | Header control: jump back to your reading anchor |
-| `↶ 返回 N` | Step back through visited sections (moves the PDF too) |
-| 🔒 / 🔓 lock | Browse other sections without moving the `在读` anchor |
-| `↗ 浏览器` | Open the full overview as standalone HTML in the system browser |
-
-Click a section row to navigate the PDF to it — exact scroll-to-top via the PDF's embedded outline when present, text-match fallback otherwise. The map and the `在读` anchor are stored per item, auto-saved as a child HTML attachment, and synced inside `state.json`.
-
-**阅读路线 — the reading-route note** (editable prose): the morphing route button generates a reading guide saved to a dedicated *AI 阅读路线* child note. Regenerating overwrites the AI-generated region but preserves your `「我的补充笔记」` section.
-
-Caveat: jumping relies on the PDF outline / text matching (no SyncTeX); for non-arXiv PDFs the skeleton uses heuristic heading detection and may fall back to even-sized windows (`· 估算分段`).
-
-### 3.15 API and WEB chat modes
-
-| Control | API mode | WEB mode |
-|---|---|---|
-| Destination | A configured local model preset | ChatGPT, DeepSeek, ChatGLM, Z.ai, Kimi, or a custom ChatGPT-like site |
-| Authentication | API key in Zotero prefs | Website login in dedicated Chrome; Z.ai also supports guest text chat |
-| Tools | Zotero/model tool loop is available | Website answer mirroring; no API tool loop |
-| Browser | Not used | Background by default; ChatGLM / Z.ai preserve sessions in a minimized window |
-| Progress | Provider streaming and tool traces | Five-stage task progress plus incremental DOM snapshots |
-| Site mode | Controlled by preset parameters | Current website model/search/thinking state; Zotero does not switch it |
-| Paper context | `Original` controls API prompt context | Attached automatically through the WEB file-upload flow |
-| Images / figures | Pictures are sent with the message; `@` inserts pictures, tables, and formulas | The paper's figures are not sent by default, only their captions; pictures picked with `@` are really uploaded |
-| Network control | `Network` uses the configured API web-search feature | `Network` is disabled; use the website's own search control |
-
-WEB footer controls are intentionally small:
-
-- **GLM websites** — ChatGLM (`chatglm.cn`) is the domestic site and no longer has a fixed restriction label. Z.ai (`chat.z.ai`) is a separate entry supporting guest text chat; attachments require login. Account status is detected automatically without closing Chrome.
-- **Service menu** — switches ChatGPT, DeepSeek, ChatGLM, Z.ai, Kimi, and saved custom sites. Its final **Manage third-party web pages…** action opens URL management and restores the previous selection. A legacy custom `kimi.com` entry is migrated to the built-in Kimi service to avoid duplicate entries.
-- **Account** — opens the current service for login and controls whether its dedicated browser stays hidden in the background during chat.
-- **Send** — Enter and the arrow follow the same path and perform a live account check immediately before submission.
-- **使用须知** — the small grey chip right of `原文` in the input row. It lists what differs between API and WEB mode, and how to send pictures, tables, and formulas in each; it is shown in both API and WEB mode. At the bottom it also records the 素材 shortcut (default `Ctrl+Shift+M`).
-- There are no Zotero-side fast/deep-thinking/search toggles. Change those on the website itself when the account window is visible.
-
-### 3.16 Empty-chat signatures
-
-Open `Settings → Zotero AI Sidebar → Display settings → AI signatures`:
-
-- Each signature has its own input row and is limited to 80 characters. Use `＋ Add signature` to create another.
-- Use `↑` / `↓` to change display order and `×` to delete one entry.
-- When **Show AI signatures in empty chats** is enabled, the ordered group appears in the center of the empty conversation area while the ready message stays at the top.
-- Hover the centered group to reveal `×`. Dismissing it disables display without deleting the list; re-enable it from settings.
-- The group disappears as soon as the first message is sent, and returns only in a new or cleared empty conversation.
-- Plugin upgrades preserve customized text, explicit empty lists, the disabled state, and user-defined order.
-- Legacy strings separated by ASCII `;` or full-width `；` are migrated into ordered rows.
-
-The defaults are:
-
-1. `Why am I reading this paper? Keep the question in sight.`
-2. `Answers can be borrowed, but the thinking must be your own.`
-
-### 3.17 Material list and picking on the PDF
-
-Material comes from the LaTeX source or a MinerU parse; the list opens with `@`, and picking is armed by 素材 or `Ctrl+Shift+M`. Whether the PDF itself is clickable depends on that source (see [§3.13](#313-arxiv-latex-source-mode)).
-
-Type `@` in the composer to open the paper's material list: pictures, tables, and formulas. The chips at the top switch between **本页 / 全部 / 图片 / 表格 / 公式**; that row stays pinned to the top of the list while the list scrolls, and the scope in effect is highlighted. When the PDF has been parsed by MinerU (including the PDF opened next to a LaTeX paper), the list shows only the material on the page you are reading and marks it 本页 (click 全部 in the chip row to widen it to the whole paper); a page holding nothing shows 本页 0 with the note 「这一页没有素材」; the page comes from the PDF you are reading, and when the foreground tab is not a reader but the paper's reader is still open, that reader's page is used instead; for LaTeX papers the page is resolved from the rendered “Figure N / Table N” text. That lookup reads the text the reader prints per page, so a list opened before the reader has that text says 还没读到 PDF 页码 instead of claiming the page is empty, and such a result is never cached: reopening the list later resolves the pages. When the parse cache has no picture files (papers parsed by an earlier version), the crops are fetched once more from MinerU's stored result, so those papers offer pictures too; if that fails (no MinerU Token, or the stored result has expired) the list keeps tables and formulas only. Picking a picture sends it as an image with the message; picking a table or formula inserts a short marker (`[表 #1]`, `[公式 #2]`) that expands to the full LaTeX source only when the message is sent. Tables parsed by MinerU are sent as LaTeX tables (`tabular`) instead of page crops; only when MinerU provides no table content does the fallback send the picture. A marker can be removed with its × and the numbering re-flows; deleting the `[Image #1]` / `[表 #1]` text from the composer removes the matching picture or material as well, just as its × does. Clicking a chip's `[公式 #1]` / `[表 #1]` label expands a rendered preview (typeset formula, small table grid) so you can verify the material before sending. **Hovering a row shows where the material sits in the PDF; while material picking is active (the 素材 chip is lit or the `@` list is open), moving the pointer over a picture, table, or formula on the left PDF highlights that material's bounding box so you can see what is clickable. Picking one leaves a green dashed box on the page marking the reference the current round uses; the box is cleared automatically as soon as you start the next round (typing in the composer, clicking 素材, or picking a new material).**
-
-**The 素材 chip** — left of the composer. Clicking it lights up and arms picking on the left PDF: click a formula, picture, or table there to attach it, and click the chip again (or pick something) to leave the mode; the material list always opens with `@`. Picking the same kind again **adds** another one (two pictures or two formulas can be quoted side by side), each with its own marker and dashed box, and pasted or screenshotted pictures stack the same way. When the paper's material comes from the LaTeX source (it has no position in the PDF), the chip opens the list instead of arming click-to-pick. The default `Ctrl+Shift+M` shortcut does exactly what a click does; rebind it in the 使用须知 dialog (a combination must include Ctrl / Alt / Meta). Closing the list from the chip — or with Esc — also deletes the half-typed `@`, so no dead trigger is left in the composer to reopen it.
-
-**While picking is active on the left PDF** — when the material list is open or the 素材 chip is lit, the page becomes a pick surface: clicking a picture, table, or formula attaches it, while a click on empty space simply picks nothing. The text on those pages is locked for the duration: the pointer turns into a crosshair and no text selection can be dragged out (the plugin disables text selection inside the reader document and refuses `selectstart`), so prose cannot be grabbed into a quote by accident. Should a selection appear anyway, it is never recorded on the right and never travels with the message, and a selection made before picking started is left untouched. On a LaTeX-sourced paper, where no material has a position in the PDF, a click pops a short hint at the pointer pointing back to the list. Close the list (Esc, or delete the `@`) or click the 素材 chip again to give the pages back to ordinary reading.
-
-### 3.18 Queues, parallel chats, and usage
-
-Settings → Zotero AI Sidebar → Display settings → Message UI:
-
-- **回复进行中允许排队新消息 (allow queuing new messages while a reply is running)** — submit while the AI is answering and the messages run in submission order once the current reply ends; the PDF selection is the one captured when you queued. Off by default.
-- **同时回答的对话数 (parallel conversations)** — 2 by default, 1–8. Different chats may answer at the same time; messages inside one chat always stay sequential.
-- **删除对话前显示确认 (confirm before deleting a chat)** — on by default. Turn it off and the delete button wipes a non-default chat immediately; `对话 1` can never be deleted.
-- **对话排版 (chat layout)** — `原始排版` (default) keeps full bubble spacing, `专注模式` tightens it.
-- **侧栏显示方式 (sidebar placement)** — `阅读器侧栏` (default, embedded beside the reader when a PDF is open) or `右侧并排` (docked to the right of the main Zotero window).
-
-Each reply footer shows this turn's usage: `Input cache hit` / `Input cache miss` / `Output` / `Cache hit rate`, with `Input raw`, `Token total`, and the counting method on hover. It is **for checking only**, not a billing total; WEB replies add no token stats.
-
-## Troubleshooting
-
-### "WEB mode says the account is not configured"
-
-Click **Account**, wait for the dedicated Chrome window, complete login, and make sure the page exposes an editable composer. Custom sites must be added through **Manage third-party web pages…** before account setup.
-
-For Z.ai, a guest-ready status permits text chat, while attachment tasks still require login. After signing in, keep Chrome open, wait for the upper status box to update, and choose Finish. The explanatory text below is fixed and does not indicate the current login state. If Google says the browser or app may not be secure, see [Z.ai login troubleshooting](WEB_AGENT_TROUBLESHOOTING.zh-CN.md#zai-的-google-登录被拒绝).
-
-### "WEB mode is stuck / the answer does not update"
-
-Check whether the progress card is still advancing. A stale companion is rejected before submission; open **Account** and click **Check and repair Web Agent** when the protocol warning appears. Closing Zotero during a running task can leave a persisted progress card, but it does not mean the website is still generating after the agent process has stopped.
-
-If a live task needs to be interrupted, press `Esc` or click the composer **Stop** button. The partial answer remains in the conversation and is marked as cancelled; you can retry it without switching away from the selected WEB service.
-
-### "Chrome appears while I ask a WEB question"
-
-Open **Account** and enable **Hide browser in the background while chatting**. Hidden attachment upload only uses a real file input; when the site does not expose one, the task reports an error rather than focusing Chrome for clipboard paste. Login and CAPTCHA setup remain intentionally visible.
-
-### "API call fails / 401 / 403"
-
-1. Click **Test connection** to surface the exact error code.
-2. Check the base URL — `/v1` suffix or trailing `/` mismatches are common.
-3. For self-hosted reverse proxies, verify the corresponding API surface (OpenAI Responses for `openai`, Anthropic Messages for `anthropic`) is fully implemented.
-
-### "AI didn't read the PDF / answer feels invented"
-
-1. Confirm an item with a PDF attachment is selected in the main pane.
-2. Open the trace — is `zotero_get_current_item` / `zotero_get_full_pdf` actually there?
-3. If tools were truncated, raise the preset's **Max tool iterations**.
-4. Provider rate-limited? The model may bail on the tool loop and answer cold; the trace will show the error.
-
-### "Immersive translate does nothing / the quick key won't translate"
-
-1. You must be in a Reader tab — not the main library pane — with **沉浸** toggled on in the toolbar.
-2. The quick-translate key acts on the *current* sentence: hover or select a sentence (so it highlights) before pressing the key; with no highlight, Space just scrolls.
-3. Other PDF-annotation extensions can intercept click events; disable temporarily and retry.
-
-### "WebDAV push fails"
-
-1. URL must end with `/`.
-2. Nutstore, Mailbox, etc. require an **app-specific password**, not your login password.
-3. The destination path must be writable, including subdirectory creation.
-
-### "Warning: attempting to write … quickPrompts"
-
-Older builds stored the whole prompt library in the Zotero preference `extensions.zotero-ai-sidebar.quickPrompts`. When that value reached ~10KB, the error console logged a performance warning. Current builds write `zotero-ai-sidebar-quick-prompts.json` instead. After installing the new XPI and restarting, saving or toggling prompt settings should no longer emit that warning. Prompts still save; this was never a save failure.
-
-### "AI tries to annotate but is blocked"
-
-Default is no-write. Two paths forward:
-
-- Short-term: ask the AI to *describe* the highlights it wants (text + color), then add them by hand.
-- Long-term: enable **YOLO mode** or the appropriate permission mode on that preset (per-preset, not global).
-
-### "Sidebar jitters when the PDF selection changes"
-
-That's an explicit anti-goal of the design. If you see it, suspect a stale extension or an old build — the selection chip is *explicit* UI and should not trigger a sidebar re-render.
-
-### "Copy button drops thinking / tool calls"
-
-Switch to **Debug** copy mode. **Clean** mode intentionally strips them — it is the share-friendly variant.
-
-### "The model keeps reading the whole paper but I only want it to look at my selection"
-
-That's the `📄 原文` toggle next to the composer (on by default). Click it to turn off — the next turn will rely only on the selection plus what the model fetches via tools. The setting is per-paper.
-
-### "First question on an arXiv or math-heavy paper is slow"
-
-Expected. The plugin is building a one-time per-paper cache (arXiv source download, or PDF formula cleanup for non-arXiv math). Subsequent questions on the same paper are fast.
-
-### "On an arXiv paper, the model can't find Figure 2 / Equation 3"
-
-Reference figures, equations, and tables **by number** ("Figure 2", "Eq. 3", "Table 1"), not by content description. The arXiv tools look up by number/label.
-
-### "The material list says 本页 0, or the page looks wrong"
-
-Check which page the reader is on: the list starts on the current page, and 全部 in the chip row widens it to the whole paper. When the reader has only just opened and its page text is not ready yet, the list says 还没读到 PDF 页码 instead of claiming the page is empty — reopen the list later. On a LaTeX paper the page is resolved from the Figure / Table numbers, and a float that can only be bounded between its neighbours reads 第 N–M 页·推测.
-
----
-
-## Related docs
-
-- [README.md](../README.md) — project intro, install, minimal config
-- [docs/HARNESS_ENGINEERING.md](HARNESS_ENGINEERING.md) — design contract for the Codex-style agent loop (developer-facing)
-- [docs/TOOLS_AND_MCP.md](TOOLS_AND_MCP.md) — Tool / Web Search / MCP decision guide
-- [docs/MATH_RENDERING.md](MATH_RENDERING.md) — math rendering details
-- [docs/RELEASE.md](RELEASE.md) — release flow
-- [CLAUDE.md](../CLAUDE.md) — project modification constraints and non-negotiables
-
-### LaTeX full-document translation through WEB mode
-
-Select **WEB** in the AI chat panel, choose a website, and configure its account. Open full-document translation for a paper with LaTeX source and start or resume translation. The reader shows `WEB · provider`; no API key is required for this translation. API mode continues to use the existing API settings. A running translation keeps the backend selected when it started.
-
-Both backends share bilingual layouts, figures, citation popups, and cached translations. Completed blocks are skipped when resuming; use the block context menu to retranslate an individual block. Full retranslation rebuilds translation state. Layout changes do not require retranslation.
-
-WEB requests batch up to 20 blocks with a target limit of 10,000 characters (an oversized block is sent alone), map responses by block ID, and wait at least 15 seconds between completed batches. Replies use text blocks with matching start/end markers, preserving LaTeX backslashes and newlines without JSON escaping. Incomplete markers or mismatched block IDs pause the run with a retry message. Protected math is validated before saving. Failed requests, timeouts, or invalid replies pause the run and preserve completed content. Cancel and check the account page for login or verification before resuming. WEB responses do not add API Token usage because websites do not supply that usage metadata. Ordinary PDFs can enter the same reader after a MinerU parse when a token is configured.
-
-### Reading routes and paper overviews through WEB mode
-
-Select **WEB** and a configured website in the chat panel, then use the middle panel's reading-route or overview generation button. These actions prefer the current paper's available LaTeX source and fall back to its PDF attachment, ignore incidental text selections, and require no API key.
-
-- **Reading route:** a complete response is saved to the dedicated AI reading-route note, preserving personal additions when updating. Incomplete replies remain in chat without replacing the existing note.
-- **Overview:** the plugin supplies the section outline; the website returns the narrative, section summaries, and logical graph. The plugin retains local navigation coordinates and uses the existing overview view/cache, preserving any code-derived network diagram.
-- Results belong to the paper that started the task, even after switching papers. Resolve website login or response-format errors before retrying.
-
-Switching back to **API** uses the original API generation flow, prompts, tools, and persistence logic.
-
-WEB reading routes and overviews start an independent website session for each task and upload the original paper again: English LaTeX source first, otherwise PDF. They omit chat history, selections, and chat-context TXT attachments. A section directory may accompany the source as navigation material.
-
-
-### Choosing the WEB browser
-
-The footer keeps **Account** for opening the login page in one click. Click the small arrow next to it to pick Google Chrome or Microsoft Edge, then click **Apply browser choice**. Choosing alone does not open the login page; after that, **Account** opens the current AI site in the saved browser. The account dialog also offers **Browser · Change** at the top.
-
-An existing Chrome setup keeps using the original browser; if only Edge was installed during first-time setup, Edge is selected automatically. The choice applies to every WEB service and does not affect API mode. Chrome and Edge keep separate dedicated login profiles, so the first switch asks you to sign in and switching back reuses the earlier profile. Browser switching waits until running or queued WEB tasks have finished.
-
-When a browser is installed in a custom directory, fill in the full path under **Browser program path** in the same menu, or click **Choose program file…**, then apply. On Windows pick `chrome.exe` / `msedge.exe`; on Linux pick the browser launcher; on macOS pick the executable inside the app bundle under `Contents/MacOS/`. Clearing the field restores automatic detection. Chrome and Edge store their custom paths separately.
-
-The browser menu shows the detected or saved full path directly. Choose **＋ Add another browser…**, enter a custom name, pick the executable, then click **Save and use**; the new browser appears in the list with its own login directory. A custom browser must support the existing Chromium remote-debugging flow — adding a path does not by itself mean the browser is verified compatible.
+The project is derived from
+[xuhan-rgb/zotero-ai-sidebar](https://github.com/xuhan-rgb/zotero-ai-sidebar)
+and is distributed under AGPL-3.0-or-later.

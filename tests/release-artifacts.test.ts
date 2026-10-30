@@ -9,7 +9,10 @@ describe("GitHub Release artifacts", () => {
       "utf8",
     );
 
-    expect(workflow).toContain(".scaffold/build/zotero-ai-sidebar.xpi");
+    expect(workflow).toContain(
+      ".scaffold/build/paper-workbench-for-zotero.xpi",
+    );
+    expect(workflow).not.toContain(".scaffold/build/zotero-ai-sidebar.xpi");
     expect(workflow).toContain(".scaffold/build/zai-web-agent-runtime.zip");
     expect(workflow).toContain("if-no-files-found: error");
     expect(workflow).toContain(

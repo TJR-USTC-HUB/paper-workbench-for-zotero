@@ -47,20 +47,19 @@ describe("optional docked sidebar layout", () => {
     );
   });
 
-  it("docks the optional note column together with the AI column", () => {
+  it("docks translation before the stacked note-and-chat workspace", () => {
     expect(sidebarSource).toContain(
-      "root.append(\n    sidebar.noteSplitter,\n    sidebar.noteColumn,\n    sidebar.splitter,\n    sidebar.column,\n  )",
+      "root.append(\n    sidebar.translationSplitter,\n    sidebar.translationColumn,\n    sidebar.splitter,\n    sidebar.column,\n  )",
+    );
+    expect(sidebarSource).toContain(
+      "column.append(link, katexLink, noteColumn, noteSplitter, mount)",
     );
     expect(sidebarSource).toContain("function syncDockedWorkspaceLayout(");
     expect(sidebarSource).toContain("syncDockedWorkspaceLayout(state)");
     expect(sidebarSource).toContain("installDockedNoteSplitterDrag(");
-    expect(sidebarCSS).toContain(
-      ":root.zai-docked-window.zai-docked-note-visible #zai-note-column",
-    );
     expect(sidebarCSS).toContain("var(--zai-docked-total-width)");
-    expect(sidebarSource).toContain("const DOCKED_NOTE_SPLITTER_WIDTH = 4");
     expect(sidebarCSS).toMatch(
-      /zai-docked-note-visible #zai-note-column-splitter\s*\{[^}]*min-width:\s*4px;/s,
+      /#zai-note-column-splitter\s*\{[^}]*cursor:\s*ns-resize;/s,
     );
   });
 
@@ -84,7 +83,9 @@ describe("optional docked sidebar layout", () => {
 
   it("exports the selected note-panel view from the overflow menu", () => {
     expect(sidebarSource).toContain("function buildTabPdfExportMenuItem(");
-    expect(sidebarSource).toContain('buttonEl(doc, uiText("▣ 转为 PDF", "▣ Export as PDF"))');
+    expect(sidebarSource).toContain(
+      'buttonEl(doc, uiText("▣ 转为 PDF", "▣ Export as PDF"))',
+    );
     expect(sidebarSource).toContain("exportCurrentNotePanelAsPdf(");
     expect(sidebarSource).toContain("saveVisibleNoteBeforeSwitch(sidebar)");
     expect(sidebarSource).toContain("renderPdfExportDialog(");
@@ -141,8 +142,12 @@ describe("optional docked sidebar layout", () => {
     expect(sidebarSource).toContain('"header-layout-choice-trigger"');
     expect(sidebarSource).toContain('"header-layout-choice-options"');
     expect(sidebarSource).toContain('["compact", uiText("专注模式", "Focus")]');
-    expect(sidebarSource).toContain('["embedded", uiText("阅读器侧栏", "Reader sidebar")]');
-    expect(sidebarSource).toContain('["docked", uiText("右侧并排", "Docked right")]');
+    expect(sidebarSource).toContain(
+      '["embedded", uiText("阅读器侧栏", "Reader sidebar")]',
+    );
+    expect(sidebarSource).toContain(
+      '["docked", uiText("右侧并排", "Docked right")]',
+    );
     expect(sidebarSource).toContain('control.toggleAttribute("open", opening)');
     expect(sidebarSource).toMatch(
       /option\.addEventListener\("click", \(\) => \{[\s\S]*?onSelect\(value\);/,

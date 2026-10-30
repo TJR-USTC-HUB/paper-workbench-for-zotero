@@ -115,6 +115,52 @@ describe('formatUserMessageForApi', () => {
     );
   });
 
+  it('treats selection-only mode as a strict prompt boundary', () => {
+    useLocale('zh-CN');
+    const message: Message = {
+      role: 'user',
+      content: '只解释这段',
+      images: [{ mediaType: 'image/png', data: 'hidden-image' }],
+      context: {
+        selectionOnly: true,
+        selectedText: 'Only this exact selection may be used.',
+        annotations: [{ type: 'note', comment: 'hidden annotation' }],
+        retrievedPassages: [
+          { text: 'hidden nearby passage', start: 1, end: 22, score: 9 },
+        ],
+        referencedItems: [{ itemID: 42, title: 'Hidden referenced paper' }],
+        promptCacheLedger: 'hidden history ledger',
+      },
+    };
+
+    const formatted = formatUserMessageForApi(
+      message,
+      'hidden full paper text',
+      {
+        includeTurnInstructions: true,
+        referencedPaperText: 'hidden referenced paper text',
+      },
+    );
+
+    expect(formatted).toContain('[Selected PDF text]');
+    expect(formatted).toContain('Only this exact selection may be used.');
+    expect(formatted).toContain('[Selected text handling instruction]');
+    expect(formatted).toContain('[User question]\n只解释这段');
+    expect(formatted).not.toContain('[Paper verification guidance]');
+    expect(formatted).not.toContain('[原文论据格式]');
+    for (const forbidden of [
+      'hidden annotation',
+      'hidden nearby passage',
+      'Hidden referenced paper',
+      'hidden history ledger',
+      'hidden full paper text',
+      'hidden referenced paper text',
+      'hidden-image',
+    ]) {
+      expect(formatted).not.toContain(forbidden);
+    }
+  });
+
   it('reminds the model to quote evidence verbatim right before the question when paper text is attached', () => {
     useLocale('zh-CN');
     const message: Message = { role: 'user', content: '总结论点和证据' };
@@ -268,6 +314,40 @@ describe('formatUserMessageForApi', () => {
 });
 
 describe('toApiMessages', () => {
+  it('reduces selection-only calls to one text-only current user turn', () => {
+    const current: Message = {
+      role: 'user',
+      content: 'current question',
+      images: [{ mediaType: 'image/png', data: 'hidden-current-image' }],
+      context: {
+        selectionOnly: true,
+        selectedText: 'Current exact selection.',
+        retrievedPassages: [
+          { text: 'hidden nearby passage', start: 0, end: 20, score: 1 },
+        ],
+      },
+    };
+    const messages = toApiMessages(
+      [
+        { role: 'user', content: 'hidden old question' },
+        { role: 'assistant', content: 'hidden old answer' },
+        current,
+      ],
+      {
+        message: current,
+        fullText: 'hidden full text',
+        referencedPaperText: 'hidden reference text',
+      },
+    );
+
+    expect(messages).toHaveLength(1);
+    expect(messages[0].role).toBe('user');
+    expect(messages[0].content).toContain('Current exact selection.');
+    expect(messages[0].content).toContain('[User question]\ncurrent question');
+    expect(messages[0]).not.toHaveProperty('images');
+    expect(JSON.stringify(messages)).not.toContain('hidden');
+  });
+
   it('injects full text only for the current user message', () => {
     const oldMessage: Message = { role: 'user', content: 'old' };
     const currentMessage: Message = {

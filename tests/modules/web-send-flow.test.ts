@@ -127,7 +127,9 @@ describe("WEB send flow", () => {
       '`${state.itemID ?? "global"}:${sourceConversationID}:${provider}`',
     );
     expect(sendWebPrompt).toContain("continuationPrompt");
-    expect(sendWebPrompt).toContain("sessionKey: webPaperSessionKey(webConversationKey, options.paperAction, task.id)");
+    expect(sendWebPrompt).toMatch(
+      /sessionKey:\s*webPaperSessionKey\(\s*webConversationKey,\s*options\.paperAction,\s*task\.id,?\s*\)/s,
+    );
     expect(sendWebPrompt).toContain(
       "const continuationPrompt = buildWebPrompt({",
     );
@@ -149,12 +151,14 @@ describe("WEB send flow", () => {
     expect(sendWebPrompt).toContain(
       "selectionSnapshot = await rebuildWebSelectionAnnotationSnapshot(",
     );
-    expect(sendWebPrompt).toContain("annotationSuggestion: options.explainSelection");
+    expect(sendWebPrompt).toContain(
+      "annotationSuggestion: options.explainSelection",
+    );
     expect(sendWebPrompt).toContain(
       "attachAnnotationDraft(target, selectionSnapshot, true)",
     );
-    expect(sendWebPrompt).toContain(
-      "options.annotationBatch || hasWebAnnotationProtocol(importedAnswer)",
+    expect(sendWebPrompt).toMatch(
+      /options\.annotationBatch\s*\|\|\s*hasWebAnnotationProtocol\(importedAnswer\)/s,
     );
     expect(sendWebPrompt).toMatch(
       /if \(state\.activeConversationID === sourceConversationID\) \{\s*renderPanel\(mount, state\);/,
@@ -166,7 +170,9 @@ describe("WEB send flow", () => {
       sidebar.indexOf("async function saveWebAnnotationBatch("),
       sidebar.indexOf("function renderAnnotationSuggestionActions("),
     );
-    expect(saveBatch).toContain("const scrollSnapshot = lockMessagesScroll(mount)");
+    expect(saveBatch).toContain(
+      "const scrollSnapshot = lockMessagesScroll(mount)",
+    );
     expect(saveBatch).toContain(
       "scheduleMessagesScrollRestore(mount, scrollSnapshot)",
     );
@@ -217,7 +223,9 @@ describe("WEB send flow", () => {
         task: { id: "task-9", title: "Kimi Web" },
       }),
     ).toBeNull();
-    expect(webPromptProviderForUserMessage({ task: { id: "task-9" } })).toBeNull();
+    expect(
+      webPromptProviderForUserMessage({ task: { id: "task-9" } }),
+    ).toBeNull();
   });
 
   it("retries a Web answer through its original Web provider", () => {
@@ -245,12 +253,16 @@ describe("WEB send flow", () => {
       'request.method === "POST" && request.url === "/browser/open"',
     );
     expect(agent).toContain('request.url?.startsWith("/browser/status")');
-    expect(agent).toContain("chromium.connectOverCDP(endpoint, { isLocal: true })");
+    expect(agent).toContain(
+      "chromium.connectOverCDP(endpoint, { isLocal: true })",
+    );
     expect(
       chromeLaunchArguments({ profileDir: "/profile" }, "visible"),
     ).toContain("--remote-debugging-port=0");
     expect(agent).not.toContain("chromium.launchPersistentContext");
-    expect(agent).toContain("async function accountReady(page, adapter, requiresLogin = false)");
+    expect(agent).toContain(
+      "async function accountReady(page, adapter, requiresLogin = false)",
+    );
     expect(agent).toContain("button[data-testid='login-button']");
     expect(agent).toContain("登录以获取");
   });
@@ -280,7 +292,9 @@ describe("WEB send flow", () => {
       agent.indexOf("async function runWithEarlyPageNotice("),
       agent.indexOf("async function throwForBlockingAccountDialog("),
     );
-    expect(operationMonitor).toContain("await throwForBlockingAccountDialog(task)");
+    expect(operationMonitor).toContain(
+      "await throwForBlockingAccountDialog(task)",
+    );
     expect(operationMonitor).not.toContain("visiblePageTextDelta(");
     expect(operationMonitor).not.toContain("nextOperationPageNoticeState(");
   });
@@ -325,7 +339,7 @@ describe("WEB send flow", () => {
     expect(agent).toContain("let pollDelay = 350;");
     expect(agent).toContain("await page.waitForTimeout(pollDelay);");
     expect(sidebar).toContain(
-      'if (message.role === "assistant") {\n    renderMessageImages(doc, root, message.images, placedCharts);',
+      'if (message.role === "assistant" && !selectionOnly) {\n    renderMessageImages(doc, root, message.images, placedCharts);',
     );
   });
 
@@ -343,7 +357,7 @@ describe("WEB send flow", () => {
     expect(sendWebPrompt).toContain("target.webPageNotice = true");
     expect(sendWebPrompt).toContain("网页未返回正常回答");
     expect(sendWebPrompt).toContain(
-      '请点击底部“账号”检查登录状态、浏览器显示方式或网页配置后重试。',
+      "请点击底部“账号”检查登录状态、浏览器显示方式或网页配置后重试。",
     );
     expect(sendWebPrompt).toMatch(
       /if \(result\.pageNotice\)[\s\S]*?else if \([\s\S]*?options\.annotationBatch/,
@@ -373,32 +387,34 @@ describe("WEB send flow", () => {
     expect(agent).toContain(
       "await submitPrompt(page, composer, adapter, previousAnswerCount, task, session)",
     );
-    expect(agent).toContain(
-      "async function promptSubmissionStarted(",
-    );
+    expect(agent).toContain("async function promptSubmissionStarted(");
     expect(agent).toContain("previousAnswerCount,");
     expect(agent).toContain("previousCompletionCount,");
     expect(agent).toContain("answerCount > previousAnswerCount");
     expect(agent).toContain("send.isEnabled()");
     expect(agent).toContain("await page.waitForTimeout(100);");
-    expect(agent).toContain("if (isRecoverablePageReadError(error)) return false;");
+    expect(agent).toContain(
+      "if (isRecoverablePageReadError(error)) return false;",
+    );
     expect(agent).toContain("button.click({ force: true, timeout: 3_000 })");
     expect(agent).toContain("const copiedAnswer = result.answer");
   });
 
   it("starts all Web attachment pastes before waiting for uploads", () => {
     expect(agent).toContain("waitForUpload: false");
-    expect(agent).toContain("waitForWebAttachments(page, adapter, attachments)");
+    expect(agent).toContain(
+      "waitForWebAttachments(page, adapter, attachments)",
+    );
   });
 
   it("selects all Kimi attachments together with a guarded serial fallback", () => {
     expect(agent).toContain("setWebAttachmentsAsBatch(");
     expect(agent).toContain("if (!uploadedAsBatch)");
     expect(agent).toContain("adapter.waitForAttachmentAcceptance");
+    expect(agent).toContain("adapter.waitForAttachmentAcceptance === true");
     expect(agent).toContain(
-      "adapter.waitForAttachmentAcceptance === true",
+      "waitForWebAttachments(page, adapter, attachments)",
     );
-    expect(agent).toContain("waitForWebAttachments(page, adapter, attachments)");
     expect(agent).not.toContain("adapter.bundleTextAttachments");
   });
 
@@ -413,8 +429,12 @@ describe("WEB send flow", () => {
     expect(agent).toContain("await cancelTask(");
     expect(agent).toContain('callback(task, "cancelled"');
     expect(agent).toContain("await task.page.close(");
-    expect(webAgentClient).toContain("export async function cancelWebAgentTask(");
-    expect(webAgentClient).toContain('`http://127.0.0.1:${config.port}/tasks/cancel`');
+    expect(webAgentClient).toContain(
+      "export async function cancelWebAgentTask(",
+    );
+    expect(webAgentClient).toContain(
+      "`http://127.0.0.1:${config.port}/tasks/cancel`",
+    );
     expect(sidebar).toMatch(/const webPromptStopping\s*=\s*webPromptBusy/);
     expect(sidebar).toContain("cancelPendingWebPromptTask(mount, state)");
     const cancelWeb = sidebar.slice(
@@ -438,7 +458,9 @@ describe("WEB send flow", () => {
   });
 
   it("allows bounded DeepSeek submit retries without retrying other providers", () => {
-    expect(agent).toContain('const attempts = adapter.name === "DeepSeek" ? 3 : 1');
+    expect(agent).toContain(
+      'const attempts = adapter.name === "DeepSeek" ? 3 : 1',
+    );
     expect(agent).toContain("attempt + 1 < attempts");
     expect(agent).toContain("未再次提交以避免重复发送");
   });
@@ -450,7 +472,9 @@ describe("WEB send flow", () => {
     expect(sendWebPrompt).toContain("releaseWebPromptLock();");
     expect(sidebar).toContain("const webPromptBusy = webPromptTarget");
     // Pending detection was extracted to web-prompt-runtime; assert behavior.
-    expect(webPromptTaskPending({ webPromptBusy: true, messages: [] })).toBe(true);
+    expect(webPromptTaskPending({ webPromptBusy: true, messages: [] })).toBe(
+      true,
+    );
     expect(
       webPromptTaskPending({
         messages: [{ task: { id: "1723-abc", title: "ChatGPT Web" } }],
@@ -466,7 +490,9 @@ describe("WEB send flow", () => {
   });
 
   it("restores the text prompt after file pastes", () => {
-    expect(agent).toContain("await restoreComposerPrompt(composer, submissionPrompt)");
+    expect(agent).toContain(
+      "await restoreComposerPrompt(composer, submissionPrompt)",
+    );
     expect(agent).toContain("const text = await composerText(composer)");
     expect(agent).toContain("if (!text.trim())");
   });
@@ -490,12 +516,16 @@ describe("WEB send flow", () => {
   });
 
   it("does not click generic chart download controls", () => {
-    expect(agent).toContain('"button, [role=\'button\'], a[download]"');
+    expect(agent).toContain("\"button, [role='button'], a[download]\"");
     expect(agent).toContain("const label = await controlLabel(button)");
-    expect(agent).toContain("const fileNameLabel = isDownloadableFileName(label)");
+    expect(agent).toContain(
+      "const fileNameLabel = isDownloadableFileName(label)",
+    );
     expect(agent).toContain("if (!fileNameLabel) continue");
     expect(agent).not.toContain("function isDownloadActionLabel(value)");
-    expect(agent).not.toContain("!fileNameLabel && !isDownloadActionLabel(label)");
+    expect(agent).not.toContain(
+      "!fileNameLabel && !isDownloadActionLabel(label)",
+    );
     expect(agent).toContain("inlineLabel: label");
     expect(agent).toContain("async function controlLabel(control)");
     // File tiles can still be numerous, so the work per answer stays bounded.
@@ -507,9 +537,11 @@ describe("WEB send flow", () => {
     expect(agent).toContain(
       "button, [role='button'], a, [role='tab'], [role='tablist'], [role='toolbar']",
     );
-    expect(agent).toContain("if (box.width < 160 || box.height < 120) return \"\"");
+    expect(agent).toContain(
+      'if (box.width < 160 || box.height < 120) return ""',
+    );
     expect(agent).toContain('element.querySelector("text, tspan")');
-    expect(agent).toContain("[clone, ...clone.querySelectorAll(\"*\")]");
+    expect(agent).toContain('[clone, ...clone.querySelectorAll("*")]');
     expect(agent).toContain("`${adapter.name} 图表 ${images.length + 1}.svg`");
   });
 
@@ -519,5 +551,4 @@ describe("WEB send flow", () => {
     );
     expect(sidebar).toContain("describeUnavailableGeneratedFiles,");
   });
-
 });

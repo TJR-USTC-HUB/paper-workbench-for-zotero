@@ -87,6 +87,10 @@ export interface MessageContext {
   sourceUrl?: string;
   selectedText?: string;
   selectedTextOrigin?: "pdf" | "chat";
+  // A hard per-turn boundary used by the simplified reader workbench. When
+  // true, the request may use only selectedText: no history, paper metadata,
+  // nearby passages, full text, attachments, web search, MCP, or Zotero tools.
+  selectionOnly?: boolean;
   quotedChatReply?: {
     fullReply: string;
     sourceConversationTitle: string;

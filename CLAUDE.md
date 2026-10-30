@@ -9,16 +9,12 @@ This project builds a Zotero sidebar AI agent: a separate AI chat column inside 
 ```bash
 npm test
 npm run build
-cp .scaffold/build/zotero-ai-sidebar.xpi zotero-ai-sidebar.xpi
-cp .scaffold/build/zotero-ai-sidebar.xpi /home/qwer/.zotero/zotero/24q8duho.default/extensions/zotero-ai-sidebar@local.xpi
+cp .scaffold/build/paper-workbench-for-zotero.xpi paper-workbench-for-zotero.xpi
+cp .scaffold/build/paper-workbench-for-zotero.xpi "$ZOTERO_PROFILE/extensions/paper-workbench-for-zotero@tjr-ustc-hub.xpi"
 ```
 
-After installing the XPI, restart Zotero:
-
-```bash
-cd ~/Downloads/Zotero_linux-x86_64
-./zotero
-```
+Set `ZOTERO_PROFILE` to a dedicated development profile. After installing the
+XPI, restart Zotero using the normal launcher for Windows, macOS, or Linux.
 
 ## Modification Guidelines
 

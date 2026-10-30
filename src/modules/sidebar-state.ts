@@ -51,6 +51,9 @@ export const SPLITTER_ID = "zai-column-splitter";
 export const NOTE_COLUMN_ID = "zai-note-column";
 export const NOTE_SPLITTER_ID = "zai-note-column-splitter";
 export const NOTE_ROOT_ID = "zai-note-root";
+export const TRANSLATION_COLUMN_ID = "zai-translation-column";
+export const TRANSLATION_SPLITTER_ID = "zai-translation-column-splitter";
+export const TRANSLATION_ROOT_ID = "zai-translation-root";
 export const ROOT_ID = "zai-root";
 export const TOGGLE_BUTTON_ID = "zai-toggle-button";
 export const FLOATING_TOGGLE_ID = "zai-floating-toggle";
@@ -59,10 +62,16 @@ export const READER_LAYOUT_PREF_KEY =
 export const contextPolicy = DEFAULT_CONTEXT_POLICY;
 export const DEFAULT_AI_COLUMN_WIDTH = 380;
 export const DEFAULT_NOTE_COLUMN_WIDTH = 560;
-export const MIN_AI_COLUMN_WIDTH = 320;
+export const DEFAULT_NOTE_PANEL_HEIGHT = 360;
+export const DEFAULT_TRANSLATION_COLUMN_WIDTH = 380;
+export const MIN_AI_COLUMN_WIDTH = 260;
 export const MIN_NOTE_COLUMN_WIDTH = 260;
+export const MIN_NOTE_PANEL_HEIGHT = 180;
+export const MIN_CHAT_PANEL_HEIGHT = 280;
+export const MIN_TRANSLATION_COLUMN_WIDTH = 240;
 export const MAX_AI_COLUMN_WIDTH = 760;
 export const MAX_NOTE_COLUMN_WIDTH = 700;
+export const MAX_TRANSLATION_COLUMN_WIDTH = 620;
 export const SELECTION_CONTEXT_RADIUS_CHARS = 2500;
 export const SELECTION_CONTEXT_QUERY_CHARS = 500;
 export const OPENAI_QUICK_MODELS = [
@@ -126,6 +135,9 @@ export interface WindowSidebarState {
   noteColumn: Element;
   noteSplitter: Element;
   noteMount: HTMLElement;
+  translationColumn: Element;
+  translationSplitter: Element;
+  translationMount: HTMLElement;
   noteItemID?: number;
   nativeNoteIDs?: Map<number | null, number>;
   overviewActive?: boolean;
@@ -176,7 +188,9 @@ export interface ReaderLayoutPrefs {
   aiWidth?: number;
   dockedAiWidth?: number;
   messageScrollPositions?: Record<string, MessagesScrollSnapshot>;
+  noteHeight?: number;
   noteWidth?: number;
+  translationWidth?: number;
   updatedAt?: number;
 }
 

@@ -20,10 +20,27 @@ function memPrefs(): PrefsStore {
 }
 
 describe("local UI settings storage", () => {
+  it("defaults, validates, and persists selection-only mode", () => {
+    const prefs = memPrefs();
+    expect(loadLocalUiSettings(prefs).selectionOnlyMode).toBe(true);
+    expect(normalizeLocalUiSettings({}).selectionOnlyMode).toBe(true);
+    expect(
+      normalizeLocalUiSettings({ selectionOnlyMode: "true" }).selectionOnlyMode,
+    ).toBe(true);
+
+    saveLocalUiSettings(prefs, {
+      ...DEFAULT_LOCAL_UI_SETTINGS,
+      selectionOnlyMode: true,
+    });
+    expect(loadLocalUiSettings(prefs).selectionOnlyMode).toBe(true);
+  });
+
   it("defaults and persists the note window mode", () => {
     const prefs = memPrefs();
     expect(loadLocalUiSettings(prefs).noteWindowMode).toBe("inline");
-    expect(normalizeLocalUiSettings({ noteWindowMode: "invalid" }).noteWindowMode).toBe("inline");
+    expect(
+      normalizeLocalUiSettings({ noteWindowMode: "invalid" }).noteWindowMode,
+    ).toBe("inline");
 
     saveLocalUiSettings(prefs, {
       ...DEFAULT_LOCAL_UI_SETTINGS,
@@ -33,9 +50,15 @@ describe("local UI settings storage", () => {
   });
 
   it("uses a native note window for floating mode or the window target", () => {
-    for (const sidebarDisplayMode of ["embedded", "docked", "floating"] as const) {
+    for (const sidebarDisplayMode of [
+      "embedded",
+      "docked",
+      "floating",
+    ] as const) {
       for (const noteWindowMode of ["inline", "window"] as const) {
-        expect(usesNativeNoteWindow({ sidebarDisplayMode, noteWindowMode })).toBe(
+        expect(
+          usesNativeNoteWindow({ sidebarDisplayMode, noteWindowMode }),
+        ).toBe(
           sidebarDisplayMode === "floating" || noteWindowMode === "window",
         );
       }
@@ -46,7 +69,9 @@ describe("local UI settings storage", () => {
   it("defaults and persists docked tight comparison setting", () => {
     const prefs = memPrefs();
     expect(loadLocalUiSettings(prefs).dockedTightLayout).toBe(false);
-    expect(normalizeLocalUiSettings({ dockedTightLayout: "true" }).dockedTightLayout).toBe(false);
+    expect(
+      normalizeLocalUiSettings({ dockedTightLayout: "true" }).dockedTightLayout,
+    ).toBe(false);
     saveLocalUiSettings(prefs, {
       ...DEFAULT_LOCAL_UI_SETTINGS,
       dockedTightLayout: true,
@@ -241,11 +266,18 @@ describe("local UI settings storage", () => {
 
   it("preserves desktop positions on a monitor left of the main display", () => {
     const prefs = memPrefs();
-    const floatingPanels = { ...DEFAULT_FLOATING_PANEL_LAYOUT,
+    const floatingPanels = {
+      ...DEFAULT_FLOATING_PANEL_LAYOUT,
       answer: { x: -1400, y: -120, width: 600, height: 680 },
     };
-    saveLocalUiSettings(prefs, { ...DEFAULT_LOCAL_UI_SETTINGS, sidebarDisplayMode: "floating", floatingPanels });
-    expect(loadLocalUiSettings(prefs).floatingPanels.answer).toEqual(floatingPanels.answer);
+    saveLocalUiSettings(prefs, {
+      ...DEFAULT_LOCAL_UI_SETTINGS,
+      sidebarDisplayMode: "floating",
+      floatingPanels,
+    });
+    expect(loadLocalUiSettings(prefs).floatingPanels.answer).toEqual(
+      floatingPanels.answer,
+    );
   });
 
   it("defaults and normalizes floating panel geometry", () => {
@@ -439,9 +471,7 @@ describe("local UI settings storage", () => {
             stop: ["button[aria-label*='Stop']button[aria-label*='停止']"],
             answers: ["[data-message-author-role='assistant']article"],
             attachmentPreviews: ["[class*='attachment'][class*='file']"],
-            attachmentUploading: [
-              "[role='progressbar'][aria-busy='true']",
-            ],
+            attachmentUploading: ["[role='progressbar'][aria-busy='true']"],
           },
         },
       ],
@@ -502,5 +532,4 @@ describe("local UI settings storage", () => {
       customMarker: "",
     });
   });
-
 });

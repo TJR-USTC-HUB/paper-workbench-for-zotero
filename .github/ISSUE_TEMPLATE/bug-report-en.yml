@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |-
-        Need Chinese? Use the [Chinese form](https://github.com/xuhan-rgb/zotero-ai-sidebar/issues/new?template=bug-report.yml).
+        Need Chinese? Use the [Chinese form](https://github.com/TJR-USTC-HUB/paper-workbench-for-zotero/issues/new?template=bug-report.yml).
 
         Thanks for reporting this. Please fill in as much as you can; without version details and reproduction steps, we usually cannot diagnose the issue.
         To provide environment details, open “Usage notes” at the bottom right of the sidebar, click **Copy environment info** at the bottom, and paste it into the Environment field.

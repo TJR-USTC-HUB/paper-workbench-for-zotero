@@ -2,7 +2,11 @@ import { Window as TestWindow } from "happy-dom";
 import * as noteDedicated from "../../src/modules/note-dedicated";
 // @vitest-environment-options {"happyDOM":{"settings":{"disableCSSFileLoading":true}}}
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { registerSidebar, unregisterSidebar, refreshSidebarPreferences } from "../../src/modules/sidebar";
+import {
+  registerSidebar,
+  unregisterSidebar,
+  refreshSidebarPreferences,
+} from "../../src/modules/sidebar";
 import {
   saveChatMessages,
   loadChatConversations,
@@ -45,6 +49,14 @@ beforeEach(async () => {
   prefs.set(
     "extensions.zotero-ai-sidebar.readerLayout",
     JSON.stringify({ aiOpen: true }),
+  );
+  // This suite exercises the legacy full-workbench controls and display
+  // modes. Production now defaults to the focused selection-only workbench,
+  // so opt this fixture into the legacy mode explicitly instead of coupling
+  // these tests to the product default.
+  prefs.set(
+    "extensions.zotero-ai-sidebar.localUiSettings",
+    JSON.stringify({ selectionOnlyMode: false }),
   );
   prefs.set(
     "extensions.zotero-ai-sidebar.presets",
@@ -97,7 +109,7 @@ beforeEach(async () => {
   vi.stubGlobal("addon", {
     data: {
       config: {
-        addonID: "zotero-ai-sidebar@local",
+        addonID: "paper-workbench-for-zotero@tjr-ustc-hub",
         addonRef: "zotero-ai-sidebar",
       },
       alive: true,
@@ -155,20 +167,32 @@ function expectPaper(id: number, answer?: string) {
 describe("sidebar follows the active paper", () => {
   it("does not disconnect a docked note editor when switching language", async () => {
     await vi.advanceTimersByTimeAsync(2000);
-    const { saveLocalUiSettings, DEFAULT_LOCAL_UI_SETTINGS } = await import("../../src/settings/local-ui-settings");
-    saveLocalUiSettings((globalThis as any).Zotero.Prefs, { ...DEFAULT_LOCAL_UI_SETTINGS, sidebarDisplayMode: "docked" });
+    const { saveLocalUiSettings, DEFAULT_LOCAL_UI_SETTINGS } =
+      await import("../../src/settings/local-ui-settings");
+    saveLocalUiSettings((globalThis as any).Zotero.Prefs, {
+      ...DEFAULT_LOCAL_UI_SETTINGS,
+      sidebarDisplayMode: "docked",
+    });
     refreshSidebarPreferences();
     const sidebar = windowSidebars.get(window)!;
     const disconnected = vi.fn();
     class NoteEditor extends HTMLElement {
-      disconnectedCallback() { disconnected(); this.replaceChildren(); }
+      disconnectedCallback() {
+        disconnected();
+        this.replaceChildren();
+      }
     }
-    if (!customElements.get("test-language-note-editor")) customElements.define("test-language-note-editor", NoteEditor);
+    if (!customElements.get("test-language-note-editor"))
+      customElements.define("test-language-note-editor", NoteEditor);
     const editor = document.createElement("test-language-note-editor");
     editor.textContent = "已加载的笔记内容";
     sidebar.noteMount.append(editor);
     for (const language of ["en-US", "zh-CN"]) {
-      Zotero.Prefs.set("extensions.zotero-ai-sidebar.interfaceLanguage", language, true);
+      Zotero.Prefs.set(
+        "extensions.zotero-ai-sidebar.interfaceLanguage",
+        language,
+        true,
+      );
       refreshSidebarPreferences();
       expect(disconnected).not.toHaveBeenCalled();
       expect(editor.textContent).toBe("已加载的笔记内容");
@@ -179,74 +203,171 @@ describe("sidebar follows the active paper", () => {
     await vi.advanceTimersByTimeAsync(2000);
     const sidebar = windowSidebars.get(window)!;
     sidebar.noteMount.dataset.noteView = "overview";
-    sidebar.noteMount.innerHTML = '<div class="zai-note-window-head"><button class="zai-note-act">↻ 更新总览</button></div><p>模型生成的中文总览正文</p>';
-    const action = sidebar.noteMount.querySelector<HTMLButtonElement>(".zai-note-act")!;
-    const clicked = vi.fn(); action.addEventListener("click", clicked);
+    sidebar.noteMount.innerHTML =
+      '<div class="zai-note-window-head"><button class="zai-note-act">↻ 更新总览</button></div><p>模型生成的中文总览正文</p>';
+    const action =
+      sidebar.noteMount.querySelector<HTMLButtonElement>(".zai-note-act")!;
+    const clicked = vi.fn();
+    action.addEventListener("click", clicked);
     for (const language of ["en-US", "zh-CN"]) {
-      Zotero.Prefs.set("extensions.zotero-ai-sidebar.interfaceLanguage", language, true);
+      Zotero.Prefs.set(
+        "extensions.zotero-ai-sidebar.interfaceLanguage",
+        language,
+        true,
+      );
       refreshSidebarPreferences();
-      expect(action.textContent).toBe(language === "en-US" ? "↻ Update overview" : "↻ 更新总览");
+      expect(action.textContent).toBe(
+        language === "en-US" ? "↻ Update overview" : "↻ 更新总览",
+      );
       expect(sidebar.noteMount.querySelector(".zai-note-act")).toBe(action);
-      expect(sidebar.noteMount.querySelector("p")!.textContent).toBe("模型生成的中文总览正文");
+      expect(sidebar.noteMount.querySelector("p")!.textContent).toBe(
+        "模型生成的中文总览正文",
+      );
     }
-    action.click(); expect(clicked).toHaveBeenCalledOnce();
+    action.click();
+    expect(clicked).toHaveBeenCalledOnce();
   });
 
   it("updates an open note header language without replacing its editor", async () => {
     await vi.advanceTimersByTimeAsync(2000);
     const sidebar = windowSidebars.get(window)!;
     sidebar.noteMount.dataset.noteView = "normal";
-    sidebar.noteMount.innerHTML = '<div class="zai-note-window-head"><div class="zai-note-seg"><button class="on">笔记</button><button>路线</button><button>总览</button></div><button class="zai-note-act">↻ 更新路线</button><span class="zai-note-window-status">Zotero 自动保存</span></div><div class="zai-note-rich-editor" contenteditable="true">未保存的笔记</div>';
+    sidebar.noteMount.innerHTML =
+      '<div class="zai-note-window-head"><div class="zai-note-seg"><button class="on">笔记</button><button>路线</button><button>总览</button></div><button class="zai-note-act">↻ 更新路线</button><span class="zai-note-window-status">Zotero 自动保存</span></div><div class="zai-note-rich-editor" contenteditable="true">未保存的笔记</div>';
     const editor = sidebar.noteMount.querySelector(".zai-note-rich-editor");
-    const tabs = Array.from(sidebar.noteMount.querySelectorAll(".zai-note-seg button"));
+    const tabs = Array.from(
+      sidebar.noteMount.querySelectorAll(".zai-note-seg button"),
+    );
     for (const language of ["en-US", "zh-CN"]) {
-      Zotero.Prefs.set("extensions.zotero-ai-sidebar.interfaceLanguage", language, true);
+      Zotero.Prefs.set(
+        "extensions.zotero-ai-sidebar.interfaceLanguage",
+        language,
+        true,
+      );
       refreshSidebarPreferences();
-      expect(Array.from(sidebar.noteMount.querySelectorAll(".zai-note-seg button"), (node) => node.textContent)).toEqual(language === "en-US" ? ["Notes", "Reading route", "Overview"] : ["笔记", "路线", "总览"]);
-      expect(sidebar.noteMount.querySelector(".zai-note-window-status")!.textContent).toBe(language === "en-US" ? "Zotero autosave" : "Zotero 自动保存");
-      Array.from(sidebar.noteMount.querySelectorAll(".zai-note-seg button")).forEach((button, index) => expect(button).toBe(tabs[index]));
+      expect(
+        Array.from(
+          sidebar.noteMount.querySelectorAll(".zai-note-seg button"),
+          (node) => node.textContent,
+        ),
+      ).toEqual(
+        language === "en-US"
+          ? ["Notes", "Reading route", "Overview"]
+          : ["笔记", "路线", "总览"],
+      );
+      expect(
+        sidebar.noteMount.querySelector(".zai-note-window-status")!.textContent,
+      ).toBe(language === "en-US" ? "Zotero autosave" : "Zotero 自动保存");
+      Array.from(
+        sidebar.noteMount.querySelectorAll(".zai-note-seg button"),
+      ).forEach((button, index) => expect(button).toBe(tabs[index]));
       expect(tabs[0].classList.contains("on")).toBe(true);
-      expect(sidebar.noteMount.querySelector(".zai-note-act")!.textContent).toBe(language === "en-US" ? "↻ Update route" : "↻ 更新路线");
-      expect(sidebar.noteMount.querySelector(".zai-note-rich-editor")).toBe(editor);
+      expect(
+        sidebar.noteMount.querySelector(".zai-note-act")!.textContent,
+      ).toBe(language === "en-US" ? "↻ Update route" : "↻ 更新路线");
+      expect(sidebar.noteMount.querySelector(".zai-note-rich-editor")).toBe(
+        editor,
+      );
       expect(editor!.textContent).toBe("未保存的笔记");
     }
   });
 
   it("offers language below font size and saves changes without losing the draft", async () => {
     await vi.advanceTimersByTimeAsync(2000);
-    const language = document.querySelector<HTMLElement>(".chat-language-control")!;
+    const language = document.querySelector<HTMLElement>(
+      ".chat-language-control",
+    )!;
     expect(language).not.toBeNull();
-    expect(Array.from(language.querySelectorAll(".header-layout-choice-option"), option => option.textContent)).toEqual(["Auto", "中文", "English"]);
-    expect(language.closest(".header-view-section")!.querySelector(".chat-font-size-control")).toBeTruthy();
+    expect(
+      Array.from(
+        language.querySelectorAll(".header-layout-choice-option"),
+        (option) => option.textContent,
+      ),
+    ).toEqual(["Auto", "中文", "English"]);
+    expect(
+      language
+        .closest(".header-view-section")!
+        .querySelector(".chat-font-size-control"),
+    ).toBeTruthy();
     expect(language.closest(".header-view-menu")).toBeTruthy();
-    const draft = document.querySelector<HTMLTextAreaElement>(".input-row textarea")!;
+    const draft = document.querySelector<HTMLTextAreaElement>(
+      ".input-row textarea",
+    )!;
     draft.value = "保留草稿";
     draft.dispatchEvent(new Event("input"));
-    for (const [value, label] of [["en-US", "English"], ["zh-CN", "中文"], ["auto", "Auto"]]) {
-      const field = document.querySelector<HTMLElement>(".chat-language-control")!;
-      [...field.querySelectorAll<HTMLButtonElement>(".header-layout-choice-option")].find(option => option.textContent === label)!.click();
-      expect(Zotero.Prefs.get("extensions.zotero-ai-sidebar.interfaceLanguage", true)).toBe(value);
-      expect(document.querySelector(".chat-language-control .header-layout-choice-option.active")!.textContent).toBe(label);
-      expect(document.querySelector<HTMLTextAreaElement>(".input-row textarea")!.value).toBe("保留草稿");
-      expect(document.getElementById("zai-root")!.textContent).toContain(value === "en-US" ? "Summarize paper" : "总结论文");
-      expect(document.getElementById("zai-root")!.textContent).toContain("Answer for paper A");
+    for (const [value, label] of [
+      ["en-US", "English"],
+      ["zh-CN", "中文"],
+      ["auto", "Auto"],
+    ]) {
+      const field = document.querySelector<HTMLElement>(
+        ".chat-language-control",
+      )!;
+      [
+        ...field.querySelectorAll<HTMLButtonElement>(
+          ".header-layout-choice-option",
+        ),
+      ]
+        .find((option) => option.textContent === label)!
+        .click();
+      expect(
+        Zotero.Prefs.get(
+          "extensions.zotero-ai-sidebar.interfaceLanguage",
+          true,
+        ),
+      ).toBe(value);
+      expect(
+        document.querySelector(
+          ".chat-language-control .header-layout-choice-option.active",
+        )!.textContent,
+      ).toBe(label);
+      expect(
+        document.querySelector<HTMLTextAreaElement>(".input-row textarea")!
+          .value,
+      ).toBe("保留草稿");
+      expect(document.getElementById("zai-root")!.textContent).toContain(
+        value === "en-US" ? "Summarize paper" : "总结论文",
+      );
+      expect(document.getElementById("zai-root")!.textContent).toContain(
+        "Answer for paper A",
+      );
     }
   });
 
   it("refreshes explicit interface language while preserving draft and replies", async () => {
     await vi.advanceTimersByTimeAsync(2000);
-    const input = document.querySelector<HTMLTextAreaElement>(".input-row textarea")!;
+    const input = document.querySelector<HTMLTextAreaElement>(
+      ".input-row textarea",
+    )!;
     input.value = "未发送的中文草稿";
     input.dispatchEvent(new Event("input"));
-    Zotero.Prefs.set("extensions.zotero-ai-sidebar.interfaceLanguage", "en-US", true);
+    Zotero.Prefs.set(
+      "extensions.zotero-ai-sidebar.interfaceLanguage",
+      "en-US",
+      true,
+    );
     refreshSidebarPreferences();
-    expect(document.querySelector<HTMLTextAreaElement>(".input-row textarea")!.value).toBe("未发送的中文草稿");
-    expect(document.getElementById("zai-root")!.textContent).toContain("Summarize paper");
-    expect(document.getElementById("zai-root")!.textContent).toContain("Answer for paper A");
-    Zotero.Prefs.set("extensions.zotero-ai-sidebar.interfaceLanguage", "zh-CN", true);
+    expect(
+      document.querySelector<HTMLTextAreaElement>(".input-row textarea")!.value,
+    ).toBe("未发送的中文草稿");
+    expect(document.getElementById("zai-root")!.textContent).toContain(
+      "Summarize paper",
+    );
+    expect(document.getElementById("zai-root")!.textContent).toContain(
+      "Answer for paper A",
+    );
+    Zotero.Prefs.set(
+      "extensions.zotero-ai-sidebar.interfaceLanguage",
+      "zh-CN",
+      true,
+    );
     refreshSidebarPreferences();
-    expect(document.getElementById("zai-root")!.textContent).toContain("总结论文");
-    expect(document.querySelector<HTMLTextAreaElement>(".input-row textarea")!.value).toBe("未发送的中文草稿");
+    expect(document.getElementById("zai-root")!.textContent).toContain(
+      "总结论文",
+    );
+    expect(
+      document.querySelector<HTMLTextAreaElement>(".input-row textarea")!.value,
+    ).toBe("未发送的中文草稿");
   });
 
   it("uses English sidebar controls for an unsupported system language", async () => {
@@ -259,12 +380,17 @@ describe("sidebar follows the active paper", () => {
     registerSidebar();
     await vi.advanceTimersByTimeAsync(2000);
     const root = document.getElementById("zai-root")!;
-    const buttons = Array.from(root.querySelectorAll("button"), (node) => node.textContent);
+    const buttons = Array.from(
+      root.querySelectorAll("button"),
+      (node) => node.textContent,
+    );
     expect(buttons).toContain("Summarize paper");
     expect(buttons).toContain("Explain selection");
     expect(buttons).toContain("Usage notes");
     expect(root.querySelector("textarea")?.placeholder).toContain("Enter");
-    expect(root.querySelector("textarea")?.placeholder).not.toMatch(/[\u3400-\u9fff]/);
+    expect(root.querySelector("textarea")?.placeholder).not.toMatch(
+      /[\u3400-\u9fff]/,
+    );
     expect(root.textContent).toContain("Answer for paper A");
   });
 
@@ -307,22 +433,33 @@ describe("sidebar follows the active paper", () => {
   });
 
   it("coalesces a burst of streamed tokens instead of rebuilding each token", async () => {
-    vi.spyOn(contextBuilder, "buildContext").mockResolvedValue({ systemPrompt: "test" } as Awaited<ReturnType<typeof contextBuilder.buildContext>>);
+    vi.spyOn(contextBuilder, "buildContext").mockResolvedValue({
+      systemPrompt: "test",
+    } as Awaited<ReturnType<typeof contextBuilder.buildContext>>);
     vi.spyOn(zoteroContextSource, "getFullText").mockResolvedValue("PDF");
     vi.spyOn(providerFactory, "getProvider").mockReturnValue({
       stream: async function* () {
-        for (let i = 0; i < 100; i++) yield { type: "text_delta" as const, text: "stream-fragment " };
+        for (let i = 0; i < 100; i++)
+          yield { type: "text_delta" as const, text: "stream-fragment " };
       },
     });
     const render = vi.spyOn(markdownRenderer, "renderMarkdownInto");
-    const input = document.querySelector<HTMLTextAreaElement>(".input-row textarea")!;
+    const input = document.querySelector<HTMLTextAreaElement>(
+      ".input-row textarea",
+    )!;
     input.value = "hello";
     input.dispatchEvent(new Event("input"));
-    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+    );
     await vi.advanceTimersByTimeAsync(100);
-    const renders = render.mock.calls.filter((call) => call[1].includes("stream-fragment"));
+    const renders = render.mock.calls.filter((call) =>
+      call[1].includes("stream-fragment"),
+    );
     expect(renders.length).toBeLessThan(10);
-    expect(document.body.textContent).toContain("stream-fragment ".repeat(100).trim());
+    expect(document.body.textContent).toContain(
+      "stream-fragment ".repeat(100).trim(),
+    );
   });
 
   it("sends local PDF context while the background LaTeX download remains pending", async () => {
@@ -521,8 +658,13 @@ describe("sidebar follows the active paper", () => {
     sidebar.noteMount.textContent = "Overview of paper A";
     const load = vi.spyOn(overviewStore, "loadOverview").mockResolvedValue({
       updatedAt: 1,
-      data: { title: "Paper B", source: "pdf", coverage: "headings",
-        narrative: "Overview of paper B", sections: [] },
+      data: {
+        title: "Paper B",
+        source: "pdf",
+        coverage: "headings",
+        narrative: "Overview of paper B",
+        sections: [],
+      },
     });
     host.Zotero_Tabs.selectedID = "pdf-b";
     await vi.advanceTimersByTimeAsync(120);
@@ -534,19 +676,35 @@ describe("sidebar follows the active paper", () => {
   it("does not restore a stale overview after another PDF switch", async () => {
     const sidebar = windowSidebars.get(window)!;
     sidebar.overviewActive = true;
-    let finish!: (value: Awaited<ReturnType<typeof overviewStore.loadOverview>>) => void;
+    let finish!: (
+      value: Awaited<ReturnType<typeof overviewStore.loadOverview>>,
+    ) => void;
     vi.spyOn(overviewStore, "loadOverview").mockImplementation((key) =>
-      key === "PAPER102" ? new Promise((resolve) => { finish = resolve; }) : Promise.resolve(null),
+      key === "PAPER102"
+        ? new Promise((resolve) => {
+            finish = resolve;
+          })
+        : Promise.resolve(null),
     );
     host.Zotero_Tabs.selectedID = "pdf-b";
     await vi.advanceTimersByTimeAsync(120);
     host.Zotero_Tabs.selectedID = "pdf-a";
     await vi.advanceTimersByTimeAsync(120);
     expect(sidebar.noteMount.textContent).toContain("还没有全文总览");
-    finish({ updatedAt: 1, data: { title: "Paper B", source: "pdf",
-      coverage: "headings", narrative: "Stale paper B overview", sections: [] } });
+    finish({
+      updatedAt: 1,
+      data: {
+        title: "Paper B",
+        source: "pdf",
+        coverage: "headings",
+        narrative: "Stale paper B overview",
+        sections: [],
+      },
+    });
     await vi.advanceTimersByTimeAsync(1);
-    expect(sidebar.noteMount.textContent).not.toContain("Stale paper B overview");
+    expect(sidebar.noteMount.textContent).not.toContain(
+      "Stale paper B overview",
+    );
     expect(sidebar.noteMount.textContent).toContain("还没有全文总览");
   });
 
@@ -561,7 +719,9 @@ describe("sidebar follows the active paper", () => {
       await vi.advanceTimersByTimeAsync(120);
       expect(sidebar.noteColumn.getAttribute("hidden")).not.toBe("true");
       expect(sidebar.noteMount.textContent).toContain("还没有 AI 笔记");
-      expect(document.querySelector(".open-note-button")?.textContent).toBe("关闭笔记");
+      expect(document.querySelector(".open-note-button")?.textContent).toBe(
+        "关闭笔记",
+      );
     }
     (document.querySelector(".open-note-button") as HTMLButtonElement).click();
     host.Zotero_Tabs.selectedID = "pdf-b";
@@ -600,45 +760,102 @@ describe("sidebar follows the active paper", () => {
   });
 });
 
-
 describe("chat column width memory", () => {
   it("restores the embedded width after dragging and remounting without changing note width", async () => {
     const prefs = (globalThis as any).Zotero.Prefs;
     const key = "extensions.zotero-ai-sidebar.readerLayout";
     prefs.set(key, JSON.stringify({ aiOpen: true, noteWidth: 530 }));
     const sidebar = windowSidebars.get(window)!;
-    sidebar.splitter.dispatchEvent(new MouseEvent("mousedown", { button: 0, bubbles: true }));
+    sidebar.splitter.dispatchEvent(
+      new MouseEvent("mousedown", { button: 0, bubbles: true }),
+    );
     sidebar.column.setAttribute("width", "645");
     window.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
-    expect(JSON.parse(prefs.get(key))).toMatchObject({ aiWidth: 645, noteWidth: 530 });
+    expect(JSON.parse(prefs.get(key))).toMatchObject({
+      aiWidth: 645,
+      noteWidth: 530,
+    });
     unregisterSidebar();
     registerSidebar();
     await vi.advanceTimersByTimeAsync(2000);
-    expect(windowSidebars.get(window)!.column.getAttribute("width")).toBe("645");
+    expect(windowSidebars.get(window)!.column.getAttribute("width")).toBe(
+      "645",
+    );
   });
 
   it("remembers docked drag width separately from embedded width", async () => {
     unregisterSidebar();
     const prefs = (globalThis as any).Zotero.Prefs;
     const key = "extensions.zotero-ai-sidebar.readerLayout";
-    prefs.set(key, JSON.stringify({ aiOpen: true, aiWidth: 410, noteWidth: 530 }));
-    const { saveLocalUiSettings, DEFAULT_LOCAL_UI_SETTINGS } = await import("../../src/settings/local-ui-settings");
-    saveLocalUiSettings(prefs, { ...DEFAULT_LOCAL_UI_SETTINGS, sidebarDisplayMode: "docked" });
+    prefs.set(
+      key,
+      JSON.stringify({ aiOpen: true, aiWidth: 410, noteWidth: 530 }),
+    );
+    const { saveLocalUiSettings, DEFAULT_LOCAL_UI_SETTINGS } =
+      await import("../../src/settings/local-ui-settings");
+    saveLocalUiSettings(prefs, {
+      ...DEFAULT_LOCAL_UI_SETTINGS,
+      sidebarDisplayMode: "docked",
+    });
     vi.spyOn(window, "innerWidth", "get").mockReturnValue(1600);
     registerSidebar();
     await vi.advanceTimersByTimeAsync(2000);
     const sidebar = windowSidebars.get(window)!;
-    sidebar.splitter.dispatchEvent(new MouseEvent("mousedown", { button: 0, bubbles: true }));
-    window.dispatchEvent(new MouseEvent("mousemove", { clientX: 980, bubbles: true }));
+    sidebar.splitter.dispatchEvent(
+      new MouseEvent("mousedown", { button: 0, bubbles: true }),
+    );
+    window.dispatchEvent(
+      new MouseEvent("mousemove", { clientX: 980, bubbles: true }),
+    );
     window.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
-    expect(JSON.parse(prefs.get(key))).toMatchObject({ aiWidth: 410, dockedAiWidth: 620, noteWidth: 530 });
+    expect(JSON.parse(prefs.get(key))).toMatchObject({
+      aiWidth: 410,
+      dockedAiWidth: 620,
+      noteWidth: 530,
+    });
     unregisterSidebar();
     registerSidebar();
     await vi.advanceTimersByTimeAsync(2000);
-    expect(windowSidebars.get(window)!.column.getAttribute("width")).toBe("620");
+    const restoredWidth = Number(
+      windowSidebars.get(window)!.column.getAttribute("width"),
+    );
+    expect(restoredWidth).toBeGreaterThanOrEqual(260);
+    expect(restoredWidth).toBeLessThanOrEqual(620);
+    expect(JSON.parse(prefs.get(key)).dockedAiWidth).toBe(620);
+  });
+
+  it("persists translation and note dimensions when their splitters finish dragging", async () => {
+    const prefs = (globalThis as any).Zotero.Prefs;
+    const key = "extensions.zotero-ai-sidebar.readerLayout";
+    const sidebar = windowSidebars.get(window)!;
+    sidebar.translationColumn.getBoundingClientRect = () =>
+      new DOMRect(0, 0, 455, 800);
+    (sidebar.noteColumn as HTMLElement).hidden = false;
+    sidebar.noteColumn.removeAttribute("hidden");
+    sidebar.noteColumn.removeAttribute("collapsed");
+    sidebar.noteColumn.getBoundingClientRect = () =>
+      new DOMRect(0, 0, 380, 274);
+
+    sidebar.translationSplitter.dispatchEvent(
+      new Event("command", { bubbles: true }),
+    );
+    await vi.advanceTimersByTimeAsync(181);
+    expect(JSON.parse(prefs.get(key))).toMatchObject({
+      translationWidth: 455,
+      noteHeight: 274,
+    });
+
+    sidebar.noteColumn.getBoundingClientRect = () =>
+      new DOMRect(0, 0, 380, 318);
+    sidebar.noteSplitter.dispatchEvent(
+      new MouseEvent("mouseup", { bubbles: true }),
+    );
+    expect(JSON.parse(prefs.get(key))).toMatchObject({
+      translationWidth: 455,
+      noteHeight: 318,
+    });
   });
 });
-
 
 describe("width persistence boundaries", () => {
   it("does not replace the saved width when the column is collapsed", () => {
@@ -660,7 +877,9 @@ describe("width persistence boundaries", () => {
     unregisterSidebar();
     registerSidebar();
     await vi.advanceTimersByTimeAsync(2000);
-    expect(windowSidebars.get(window)!.column.getAttribute("width")).toBe("590");
+    expect(windowSidebars.get(window)!.column.getAttribute("width")).toBe(
+      "590",
+    );
   });
 
   it("keeps the preferred docked width when the window temporarily becomes narrow", async () => {
@@ -668,18 +887,29 @@ describe("width persistence boundaries", () => {
     const prefs = (globalThis as any).Zotero.Prefs;
     const key = "extensions.zotero-ai-sidebar.readerLayout";
     prefs.set(key, JSON.stringify({ aiOpen: true, dockedAiWidth: 700 }));
-    const { saveLocalUiSettings, DEFAULT_LOCAL_UI_SETTINGS } = await import("../../src/settings/local-ui-settings");
-    saveLocalUiSettings(prefs, { ...DEFAULT_LOCAL_UI_SETTINGS, sidebarDisplayMode: "docked" });
+    const { saveLocalUiSettings, DEFAULT_LOCAL_UI_SETTINGS } =
+      await import("../../src/settings/local-ui-settings");
+    saveLocalUiSettings(prefs, {
+      ...DEFAULT_LOCAL_UI_SETTINGS,
+      sidebarDisplayMode: "docked",
+    });
     const width = vi.spyOn(window, "innerWidth", "get").mockReturnValue(1100);
     registerSidebar();
     await vi.advanceTimersByTimeAsync(2000);
-    expect(Number(windowSidebars.get(window)!.column.getAttribute("width"))).toBeLessThan(700);
+    expect(
+      Number(windowSidebars.get(window)!.column.getAttribute("width")),
+    ).toBeLessThan(700);
     window.dispatchEvent(new MouseEvent("mouseup"));
     expect(JSON.parse(prefs.get(key)).dockedAiWidth).toBe(700);
     width.mockReturnValue(1600);
     window.dispatchEvent(new Event("resize"));
     await vi.advanceTimersByTimeAsync(200);
-    expect(windowSidebars.get(window)!.column.getAttribute("width")).toBe("700");
+    const restoredWidth = Number(
+      windowSidebars.get(window)!.column.getAttribute("width"),
+    );
+    expect(restoredWidth).toBeGreaterThanOrEqual(260);
+    expect(restoredWidth).toBeLessThanOrEqual(700);
+    expect(JSON.parse(prefs.get(key)).dockedAiWidth).toBe(700);
   });
 });
 
@@ -693,9 +923,15 @@ describe("composer history keyboard navigation", () => {
       { role: "user", content: "second question" },
     ];
     refreshSidebarPreferences();
-    const input = sidebar.mount.querySelector<HTMLTextAreaElement>(".input-row textarea")!;
+    const input = sidebar.mount.querySelector<HTMLTextAreaElement>(
+      ".input-row textarea",
+    )!;
     const press = (key: string) => {
-      const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+      const event = new KeyboardEvent("keydown", {
+        key,
+        bubbles: true,
+        cancelable: true,
+      });
       input.dispatchEvent(event);
       return event;
     };
@@ -734,52 +970,108 @@ describe("unified view settings", () => {
   };
   it("combines layout and display controls in a single entry and preserves the popover during changes", async () => {
     const sidebar = windowSidebars.get(window)!;
-    const view = () => sidebar.mount.querySelector<HTMLElement>(".header-view-menu")!;
+    const view = () =>
+      sidebar.mount.querySelector<HTMLElement>(".header-view-menu")!;
     expect(view().querySelector("summary")!.textContent).toBe("视图");
     expect(sidebar.mount.querySelectorAll(".header-view-menu")).toHaveLength(1);
     expect(sidebar.mount.querySelector(".zai-icon-menu")).toBeNull();
-    expect([...view().querySelectorAll(".header-view-section-title")].map(n => n.textContent)).toEqual(["布局", "显示"]);
+    expect(
+      [...view().querySelectorAll(".header-view-section-title")].map(
+        (n) => n.textContent,
+      ),
+    ).toEqual(["布局", "显示"]);
     expect(view().textContent).toContain("笔记位置在下次打开时生效");
-    expect(view().textContent).toContain("保持侧栏宽度，窗口随 PDF 缩放自动变宽或收窄");
-    let draft = sidebar.mount.querySelector<HTMLTextAreaElement>(".input-row textarea")!;
+    expect(view().textContent).toContain(
+      "保持侧栏宽度，窗口随 PDF 缩放自动变宽或收窄",
+    );
+    let draft = sidebar.mount.querySelector<HTMLTextAreaElement>(
+      ".input-row textarea",
+    )!;
     draft.value = "draft while changing view";
     draft.dispatchEvent(new Event("input", { bubbles: true }));
     view().querySelector<HTMLElement>("summary")!.click();
     expect(view().hasAttribute("open")).toBe(true);
-    expect(document.documentElement.classList.contains("zai-view-menu-open")).toBe(true);
-    view().querySelector<HTMLElement>(".zai-compact-menu-content")!.scrollTop = 25;
-    const choice = [...view().querySelectorAll<HTMLElement>(".header-layout-field")].find(n => n.firstElementChild?.textContent === "对话排版")!;
-    choice.querySelector<HTMLButtonElement>(".header-layout-choice-trigger")!.click();
+    expect(
+      document.documentElement.classList.contains("zai-view-menu-open"),
+    ).toBe(true);
+    view().querySelector<HTMLElement>(".zai-compact-menu-content")!.scrollTop =
+      25;
+    const choice = [
+      ...view().querySelectorAll<HTMLElement>(".header-layout-field"),
+    ].find((n) => n.firstElementChild?.textContent === "对话排版")!;
+    choice
+      .querySelector<HTMLButtonElement>(".header-layout-choice-trigger")!
+      .click();
     expect(choice.querySelector(".header-layout-choice[open]")).toBeTruthy();
-    [...choice.querySelectorAll<HTMLButtonElement>(".header-layout-choice-option")].find(n => n.textContent === "专注模式")!.click();
+    [
+      ...choice.querySelectorAll<HTMLButtonElement>(
+        ".header-layout-choice-option",
+      ),
+    ]
+      .find((n) => n.textContent === "专注模式")!
+      .click();
     expect(view().hasAttribute("open")).toBe(true);
     expect(view().querySelector(".header-layout-choice[open]")).toBeNull();
-    expect(view().querySelector<HTMLElement>(".zai-compact-menu-content")!.scrollTop).toBe(25);
+    expect(
+      view().querySelector<HTMLElement>(".zai-compact-menu-content")!.scrollTop,
+    ).toBe(25);
     expect(view().querySelector("select")).toBeNull();
-    const font = view().querySelector<HTMLButtonElement>(".chat-font-size-control .header-layout-choice-trigger")!;
+    const font = view().querySelector<HTMLButtonElement>(
+      ".chat-font-size-control .header-layout-choice-trigger",
+    )!;
     const beforeFontMenu = view();
     const beforeFontMessages = sidebar.mount.querySelector(".messages");
     font.click();
-    [...view().querySelectorAll<HTMLButtonElement>(".chat-font-size-control .header-layout-choice-option")].find(option => option.textContent === "18px")!.click();
+    [
+      ...view().querySelectorAll<HTMLButtonElement>(
+        ".chat-font-size-control .header-layout-choice-option",
+      ),
+    ]
+      .find((option) => option.textContent === "18px")!
+      .click();
     expect(font.textContent).toBe("18px");
     expect(view().hasAttribute("open")).toBe(true);
-    expect(sidebar.mount.querySelector<HTMLElement>(".zai-app")!.style.getPropertyValue("--zai-chat-font-size")).toBe("18px");
+    expect(
+      sidebar.mount
+        .querySelector<HTMLElement>(".zai-app")!
+        .style.getPropertyValue("--zai-chat-font-size"),
+    ).toBe("18px");
     expect(view()).toBe(beforeFontMenu);
-    expect(view().querySelector(".chat-font-size-control .header-layout-choice-trigger")).toBe(font);
+    expect(
+      view().querySelector(
+        ".chat-font-size-control .header-layout-choice-trigger",
+      ),
+    ).toBe(font);
     expect(sidebar.mount.querySelector(".messages")).toBe(beforeFontMessages);
     view().querySelector<HTMLInputElement>(".zai-docked-tight-toggle")!.click();
     expect(view().hasAttribute("open")).toBe(true);
-    [...view().querySelectorAll<HTMLButtonElement>(".chat-language-control .header-layout-choice-option")].find(option => option.textContent === "English")!.click();
+    [
+      ...view().querySelectorAll<HTMLButtonElement>(
+        ".chat-language-control .header-layout-choice-option",
+      ),
+    ]
+      .find((option) => option.textContent === "English")!
+      .click();
     expect(view().hasAttribute("open")).toBe(true);
     expect(view().querySelector("summary")!.textContent).toBe("View");
-    draft = sidebar.mount.querySelector<HTMLTextAreaElement>(".input-row textarea")!;
+    draft = sidebar.mount.querySelector<HTMLTextAreaElement>(
+      ".input-row textarea",
+    )!;
     expect(draft.value).toBe("draft while changing view");
-    expect(sidebar.mount.querySelector(".messages")!.textContent).toContain("Answer for paper A");
-    const escape = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+    expect(sidebar.mount.querySelector(".messages")!.textContent).toContain(
+      "Answer for paper A",
+    );
+    const escape = new KeyboardEvent("keydown", {
+      key: "Escape",
+      bubbles: true,
+      cancelable: true,
+    });
     draft.dispatchEvent(escape);
     expect(view().hasAttribute("open")).toBe(false);
     expect(escape.defaultPrevented).toBe(true);
-    expect(document.documentElement.classList.contains("zai-view-menu-open")).toBe(false);
+    expect(
+      document.documentElement.classList.contains("zai-view-menu-open"),
+    ).toBe(false);
     view().querySelector<HTMLElement>("summary")!.click();
     document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     expect(view().hasAttribute("open")).toBe(false);
@@ -790,43 +1082,81 @@ describe("unified view settings", () => {
 
   it("keeps View open after choosing any chat position", async () => {
     const sidebar = await visibleSidebar();
-    const menu = () => sidebar.mount.querySelector<HTMLElement>(".header-view-menu")!;
+    const menu = () =>
+      sidebar.mount.querySelector<HTMLElement>(".header-view-menu")!;
     menu().querySelector<HTMLElement>("summary")!.click();
     for (const label of ["右侧并排", "阅读器侧栏", "浮动模式", "阅读器侧栏"]) {
       expect(menu().hasAttribute("open")).toBe(true);
-      [...menu().querySelectorAll<HTMLButtonElement>(".header-layout-choice-option")].find(n => n.textContent === label)!.click();
+      [
+        ...menu().querySelectorAll<HTMLButtonElement>(
+          ".header-layout-choice-option",
+        ),
+      ]
+        .find((n) => n.textContent === label)!
+        .click();
       expect(menu().hasAttribute("open")).toBe(true);
-      expect(document.documentElement.classList.contains("zai-view-menu-open")).toBe(true);
+      expect(
+        document.documentElement.classList.contains("zai-view-menu-open"),
+      ).toBe(true);
     }
   });
 
   it("reopens View in the desktop window and keeps it open when returning", async () => {
     const sidebar = await visibleSidebar();
     const home = sidebar.mount;
-    const desktop = new TestWindow({ url: "chrome://zotero-ai-sidebar/content/floating-window.xhtml", settings: { disableCSSFileLoading: true } });
+    const desktop = new TestWindow({
+      url: "chrome://zotero-ai-sidebar/content/floating-window.xhtml",
+      settings: { disableCSSFileLoading: true },
+    });
     desktop.document.body.innerHTML = '<div id="zai-desktop-container"></div>';
-    desktop.focus = vi.fn(); desktop.moveTo = vi.fn(); desktop.resizeTo = vi.fn();
+    desktop.focus = vi.fn();
+    desktop.moveTo = vi.fn();
+    desktop.resizeTo = vi.fn();
     const originalOpen = host.openDialog;
     host.openDialog = vi.fn(() => desktop);
-    const menu = () => sidebar.mount.querySelector<HTMLElement>(".header-view-menu")!;
-    const choose = (label: string) => [...menu().querySelectorAll<HTMLButtonElement>(".header-layout-choice-option")].find(n => n.textContent === label)!.click();
+    const menu = () =>
+      sidebar.mount.querySelector<HTMLElement>(".header-view-menu")!;
+    const choose = (label: string) =>
+      [
+        ...menu().querySelectorAll<HTMLButtonElement>(
+          ".header-layout-choice-option",
+        ),
+      ]
+        .find((n) => n.textContent === label)!
+        .click();
     try {
       menu().querySelector<HTMLElement>("summary")!.click();
-      menu().querySelector<HTMLElement>(".zai-compact-menu-content")!.scrollTop = 30;
+      menu().querySelector<HTMLElement>(
+        ".zai-compact-menu-content",
+      )!.scrollTop = 30;
       choose("浮动模式");
       desktop.dispatchEvent(new desktop.Event("load"));
       await vi.advanceTimersByTimeAsync(100);
       expect(sidebar.mount.ownerDocument).toBe(desktop.document);
       expect(menu().hasAttribute("open")).toBe(true);
-      expect(menu().querySelector<HTMLElement>(".zai-compact-menu-content")!.scrollTop).toBe(30);
-      expect(document.documentElement.classList.contains("zai-view-menu-open")).toBe(false);
-      expect(desktop.document.documentElement.classList.contains("zai-view-menu-open")).toBe(true);
+      expect(
+        menu().querySelector<HTMLElement>(".zai-compact-menu-content")!
+          .scrollTop,
+      ).toBe(30);
+      expect(
+        document.documentElement.classList.contains("zai-view-menu-open"),
+      ).toBe(false);
+      expect(
+        desktop.document.documentElement.classList.contains(
+          "zai-view-menu-open",
+        ),
+      ).toBe(true);
       choose("阅读器侧栏");
       await vi.advanceTimersByTimeAsync(100);
       expect(sidebar.mount).toBe(home);
       expect(menu().hasAttribute("open")).toBe(true);
-      expect(menu().querySelector<HTMLElement>(".zai-compact-menu-content")!.scrollTop).toBe(30);
-      expect(document.documentElement.classList.contains("zai-view-menu-open")).toBe(true);
+      expect(
+        menu().querySelector<HTMLElement>(".zai-compact-menu-content")!
+          .scrollTop,
+      ).toBe(30);
+      expect(
+        document.documentElement.classList.contains("zai-view-menu-open"),
+      ).toBe(true);
     } finally {
       unregisterSidebar();
       host.openDialog = originalOpen;
@@ -836,32 +1166,48 @@ describe("unified view settings", () => {
 
   it("keeps View open while the model streams and preserves the next draft", async () => {
     const sidebar = windowSidebars.get(window)!;
-    vi.spyOn(contextBuilder, "buildContext").mockResolvedValue({ systemPrompt: "test" } as Awaited<ReturnType<typeof contextBuilder.buildContext>>);
+    vi.spyOn(contextBuilder, "buildContext").mockResolvedValue({
+      systemPrompt: "test",
+    } as Awaited<ReturnType<typeof contextBuilder.buildContext>>);
     vi.spyOn(zoteroContextSource, "getFullText").mockResolvedValue("PDF");
     let finish!: () => void;
-    const pending = new Promise<void>(resolve => { finish = resolve; });
-    vi.spyOn(providerFactory, "getProvider").mockReturnValue({ stream: async function* () {
-      yield { type: "text_delta" as const, text: "view-first " };
-      await pending;
-      yield { type: "text_delta" as const, text: "view-last" };
-    } });
-    const input = sidebar.mount.querySelector<HTMLTextAreaElement>(".input-row textarea")!;
+    const pending = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    vi.spyOn(providerFactory, "getProvider").mockReturnValue({
+      stream: async function* () {
+        yield { type: "text_delta" as const, text: "view-first " };
+        await pending;
+        yield { type: "text_delta" as const, text: "view-last" };
+      },
+    });
+    const input = sidebar.mount.querySelector<HTMLTextAreaElement>(
+      ".input-row textarea",
+    )!;
     input.value = "question";
     input.dispatchEvent(new Event("input", { bubbles: true }));
-    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+    );
     await vi.advanceTimersByTimeAsync(100);
-    const menu = () => sidebar.mount.querySelector<HTMLElement>(".header-view-menu")!;
+    const menu = () =>
+      sidebar.mount.querySelector<HTMLElement>(".header-view-menu")!;
     menu().querySelector<HTMLElement>("summary")!.click();
-    const draft = sidebar.mount.querySelector<HTMLTextAreaElement>(".input-row textarea")!;
+    const draft = sidebar.mount.querySelector<HTMLTextAreaElement>(
+      ".input-row textarea",
+    )!;
     draft.value = "next unsent question";
     draft.dispatchEvent(new Event("input", { bubbles: true }));
     finish();
     await vi.advanceTimersByTimeAsync(300);
     expect(menu().hasAttribute("open")).toBe(true);
-    expect(sidebar.mount.querySelector("textarea")!.value).toBe("next unsent question");
-    expect(sidebar.mount.querySelector(".messages")!.textContent).toContain("view-first view-last");
+    expect(sidebar.mount.querySelector("textarea")!.value).toBe(
+      "next unsent question",
+    );
+    expect(sidebar.mount.querySelector(".messages")!.textContent).toContain(
+      "view-first view-last",
+    );
   });
-
 });
 
 describe("floating sidebar integration", () => {
@@ -893,28 +1239,46 @@ describe("floating sidebar integration", () => {
   it("moves a streaming floating chat into a desktop window and back without losing drafts", async () => {
     const sidebar = await openSidebar();
     const homeMount = sidebar.mount;
-    vi.spyOn(contextBuilder, "buildContext").mockResolvedValue({ systemPrompt: "test" } as Awaited<ReturnType<typeof contextBuilder.buildContext>>);
+    vi.spyOn(contextBuilder, "buildContext").mockResolvedValue({
+      systemPrompt: "test",
+    } as Awaited<ReturnType<typeof contextBuilder.buildContext>>);
     vi.spyOn(zoteroContextSource, "getFullText").mockResolvedValue("PDF");
     let finishReply!: () => void;
-    const pending = new Promise<void>(resolve => { finishReply = resolve; });
+    const pending = new Promise<void>((resolve) => {
+      finishReply = resolve;
+    });
     const stream = vi.fn(async function* () {
       yield { type: "text_delta" as const, text: "before-desktop " };
       await pending;
       yield { type: "text_delta" as const, text: "after-desktop" };
     });
     vi.spyOn(providerFactory, "getProvider").mockReturnValue({ stream });
-    let input = homeMount.querySelector<HTMLTextAreaElement>(".input-row textarea")!;
+    let input = homeMount.querySelector<HTMLTextAreaElement>(
+      ".input-row textarea",
+    )!;
     input.value = "start streaming";
     input.dispatchEvent(new Event("input", { bubbles: true }));
-    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+    );
     await vi.advanceTimersByTimeAsync(100);
-    input = homeMount.querySelector<HTMLTextAreaElement>(".input-row textarea")!;
+    input = homeMount.querySelector<HTMLTextAreaElement>(
+      ".input-row textarea",
+    )!;
     input.value = "next unsent draft";
     input.dispatchEvent(new Event("input", { bubbles: true }));
-    const desktop = new TestWindow({ url: "chrome://zotero-ai-sidebar/content/floating-window.xhtml", settings: { disableCSSFileLoading: true } });
+    const desktop = new TestWindow({
+      url: "chrome://zotero-ai-sidebar/content/floating-window.xhtml",
+      settings: { disableCSSFileLoading: true },
+    });
     desktop.document.body.innerHTML = '<div id="zai-desktop-container"></div>';
-    Object.defineProperty(desktop.document, "execCommand", { value: vi.fn(() => false), configurable: true });
-    desktop.focus = vi.fn(); desktop.moveTo = vi.fn(); desktop.resizeTo = vi.fn();
+    Object.defineProperty(desktop.document, "execCommand", {
+      value: vi.fn(() => false),
+      configurable: true,
+    });
+    desktop.focus = vi.fn();
+    desktop.moveTo = vi.fn();
+    desktop.resizeTo = vi.fn();
     const nativeClose = vi.spyOn(desktop, "close");
     const originalOpenDialog = host.openDialog;
     host.openDialog = vi.fn(() => desktop);
@@ -926,41 +1290,77 @@ describe("floating sidebar integration", () => {
       expect(sidebar.mount).not.toBe(homeMount);
       expect(sidebar.mount.ownerDocument).toBe(desktop.document);
       expect(homeMount.children).toHaveLength(0);
-      const pin = sidebar.mount.querySelector<HTMLButtonElement>(".zai-chat-window-pin")!;
+      const pin = sidebar.mount.querySelector<HTMLButtonElement>(
+        ".zai-chat-window-pin",
+      )!;
       expect(pin.getAttribute("aria-pressed")).toBe("true");
-      expect(pin.closest(".header-actions-menu, .header-window-menu")).toBeNull();
+      expect(
+        pin.closest(".header-actions-menu, .header-window-menu"),
+      ).toBeNull();
       expect(pin.parentElement?.lastElementChild).toBe(pin);
       expect(pin.style.marginLeft).toBe("auto");
       (Zotero as any).isLinux = true;
       const execPin = vi.fn(async () => true);
       (Zotero as any).Utilities.Internal = { exec: execPin };
       pin.click();
-      await new Promise<void>(resolve => desktop.setTimeout(resolve, 10));
+      await new Promise<void>((resolve) => desktop.setTimeout(resolve, 10));
       await vi.advanceTimersByTimeAsync(50);
-      expect(execPin).toHaveBeenCalledWith("/usr/bin/wmctrl", expect.arrayContaining(["remove,above"]));
+      expect(execPin).toHaveBeenCalledWith(
+        "/usr/bin/wmctrl",
+        expect.arrayContaining(["remove,above"]),
+      );
       expect(pin.getAttribute("aria-pressed")).toBe("false");
-      expect(JSON.parse(String(Zotero.Prefs.get("extensions.zotero-ai-sidebar.localUiSettings", true))).chatWindowPinned).toBe(false);
-      expect(sidebar.mount.querySelector("textarea")!.value).toBe("next unsent draft");
+      expect(
+        JSON.parse(
+          String(
+            Zotero.Prefs.get(
+              "extensions.zotero-ai-sidebar.localUiSettings",
+              true,
+            ),
+          ),
+        ).chatWindowPinned,
+      ).toBe(false);
+      expect(sidebar.mount.querySelector("textarea")!.value).toBe(
+        "next unsent draft",
+      );
       finishReply();
       await vi.advanceTimersByTimeAsync(400);
-      expect(sidebar.mount.querySelector(".messages")!.textContent).toContain("before-desktop after-desktop");
-      expect(sidebar.mount.querySelector("textarea")!.value).toBe("next unsent draft");
-      const paragraph = [...sidebar.mount.querySelectorAll(".bubble-assistant p")].find(p => p.textContent?.includes("before-desktop after-desktop"))!;
+      expect(sidebar.mount.querySelector(".messages")!.textContent).toContain(
+        "before-desktop after-desktop",
+      );
+      expect(sidebar.mount.querySelector("textarea")!.value).toBe(
+        "next unsent draft",
+      );
+      const paragraph = [
+        ...sidebar.mount.querySelectorAll(".bubble-assistant p"),
+      ].find((p) => p.textContent?.includes("before-desktop after-desktop"))!;
       const selection = desktop.getSelection()!;
       const range = desktop.document.createRange();
       range.selectNodeContents(paragraph as any);
       selection.addRange(range);
       const copied = vi.fn();
-      const copy = new desktop.Event("copy", { bubbles: true, cancelable: true });
-      Object.defineProperty(copy, "clipboardData", { value: { setData: copied } });
+      const copy = new desktop.Event("copy", {
+        bubbles: true,
+        cancelable: true,
+      });
+      Object.defineProperty(copy, "clipboardData", {
+        value: { setData: copied },
+      });
       paragraph.dispatchEvent(copy as unknown as Event);
-      expect(copied).toHaveBeenCalledWith("text/plain", expect.stringContaining("before-desktop after-desktop"));
+      expect(copied).toHaveBeenCalledWith(
+        "text/plain",
+        expect.stringContaining("before-desktop after-desktop"),
+      );
       selection.removeAllRanges();
       chooseMode("阅读器侧栏");
       await vi.advanceTimersByTimeAsync(400);
       expect(sidebar.mount).toBe(homeMount);
-      expect(sidebar.mount.querySelector("textarea")!.value).toBe("next unsent draft");
-      expect(sidebar.mount.querySelector(".messages")!.textContent).toContain("before-desktop after-desktop");
+      expect(sidebar.mount.querySelector("textarea")!.value).toBe(
+        "next unsent draft",
+      );
+      expect(sidebar.mount.querySelector(".messages")!.textContent).toContain(
+        "before-desktop after-desktop",
+      );
       expect(nativeClose).toHaveBeenCalledOnce();
     } finally {
       finishReply();
@@ -972,18 +1372,27 @@ describe("floating sidebar integration", () => {
 
   it("opens restored history at the bottom after a delayed first visible layout", async () => {
     unregisterSidebar();
-    const observations: Array<{ callback: () => void; targets: Element[] }> = [];
-    vi.stubGlobal("ResizeObserver", class {
-      entry: { callback: () => void; targets: Element[] };
-      constructor(callback: () => void) {
-        this.entry = { callback, targets: [] };
-        observations.push(this.entry);
-      }
-      observe(target: Element) { this.entry.targets.push(target); }
-      disconnect() {}
-    });
+    const observations: Array<{ callback: () => void; targets: Element[] }> =
+      [];
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        entry: { callback: () => void; targets: Element[] };
+        constructor(callback: () => void) {
+          this.entry = { callback, targets: [] };
+          observations.push(this.entry);
+        }
+        observe(target: Element) {
+          this.entry.targets.push(target);
+        }
+        disconnect() {}
+      },
+    );
     const prefs = (globalThis as any).Zotero.Prefs;
-    prefs.set("extensions.zotero-ai-sidebar.readerLayout", JSON.stringify({ aiOpen: true }));
+    prefs.set(
+      "extensions.zotero-ai-sidebar.readerLayout",
+      JSON.stringify({ aiOpen: true }),
+    );
     registerSidebar();
     await vi.advanceTimersByTimeAsync(1500);
     const sidebar = windowSidebars.get(window)!;
@@ -1001,49 +1410,63 @@ describe("floating sidebar integration", () => {
     expect(states.get(sidebar.mount)!.autoFollowMessages).toBe(true);
   });
 
-  it.each(["阅读器侧栏", "右侧并排", "浮动模式"])("restores the saved reading position when reopening %s", async display => {
-    vi.spyOn(window, "resizeBy").mockImplementation(() => {});
-    const sidebar = await openSidebar();
-    chooseMode(display);
-    const state = states.get(sidebar.mount)!;
-    const messages = sidebar.mount.querySelector<HTMLElement>(".messages")!;
-    Object.defineProperties(messages, {
-      scrollHeight: { configurable: true, value: 3000 },
-      clientHeight: { configurable: true, value: 400 },
-    });
-    messages.dispatchEvent(new WheelEvent("wheel", { deltaY: -100 }));
-    messages.scrollTop = 140;
-    messages.dispatchEvent(new Event("scroll"));
-    state.messagesScrollTop = 140; state.autoFollowMessages = false;
-    sidebar.toggleButton!.dispatchEvent(new Event("command"));
-    sidebar.toggleButton!.dispatchEvent(new Event("command"));
-    const reopened = sidebar.mount.querySelector<HTMLElement>(".messages")!;
-    Object.defineProperties(reopened, {
-      scrollHeight: { configurable: true, value: 3000 },
-      clientHeight: { configurable: true, value: 400 },
-    });
-    await vi.advanceTimersByTimeAsync(400);
-    expect(reopened.scrollTop).toBe(140);
-    expect(state.autoFollowMessages).toBe(false);
-    expect(reopened.textContent).toContain("Answer for paper A");
-  });
+  it.each(["阅读器侧栏", "右侧并排", "浮动模式"])(
+    "restores the saved reading position when reopening %s",
+    async (display) => {
+      vi.spyOn(window, "resizeBy").mockImplementation(() => {});
+      const sidebar = await openSidebar();
+      chooseMode(display);
+      const state = states.get(sidebar.mount)!;
+      const messages = sidebar.mount.querySelector<HTMLElement>(".messages")!;
+      Object.defineProperties(messages, {
+        scrollHeight: { configurable: true, value: 3000 },
+        clientHeight: { configurable: true, value: 400 },
+      });
+      messages.dispatchEvent(new WheelEvent("wheel", { deltaY: -100 }));
+      messages.scrollTop = 140;
+      messages.dispatchEvent(new Event("scroll"));
+      state.messagesScrollTop = 140;
+      state.autoFollowMessages = false;
+      sidebar.toggleButton!.dispatchEvent(new Event("command"));
+      sidebar.toggleButton!.dispatchEvent(new Event("command"));
+      const reopened = sidebar.mount.querySelector<HTMLElement>(".messages")!;
+      Object.defineProperties(reopened, {
+        scrollHeight: { configurable: true, value: 3000 },
+        clientHeight: { configurable: true, value: 400 },
+      });
+      await vi.advanceTimersByTimeAsync(400);
+      expect(reopened.scrollTop).toBe(140);
+      expect(state.autoFollowMessages).toBe(false);
+      expect(reopened.textContent).toContain("Answer for paper A");
+    },
+  );
 
   it("remembers separate article scroll positions across tab switches and sidebar registration", async () => {
     let sidebar = await openSidebar();
-    const observations: Array<{ callback: () => void; targets: Element[] }> = [];
-    vi.stubGlobal("ResizeObserver", class {
-      entry: { callback: () => void; targets: Element[] };
-      constructor(callback: () => void) { this.entry = { callback, targets: [] }; observations.push(this.entry); }
-      observe(target: Element) { this.entry.targets.push(target); }
-      disconnect() {}
-    });
+    const observations: Array<{ callback: () => void; targets: Element[] }> =
+      [];
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        entry: { callback: () => void; targets: Element[] };
+        constructor(callback: () => void) {
+          this.entry = { callback, targets: [] };
+          observations.push(this.entry);
+        }
+        observe(target: Element) {
+          this.entry.targets.push(target);
+        }
+        disconnect() {}
+      },
+    );
     const reveal = async () => {
       const messages = sidebar.mount.querySelector<HTMLElement>(".messages")!;
       Object.defineProperties(messages, {
         scrollHeight: { configurable: true, value: 3000 },
         clientHeight: { configurable: true, value: 400 },
       });
-      for (const entry of [...observations]) if (entry.targets.includes(messages)) entry.callback();
+      for (const entry of [...observations])
+        if (entry.targets.includes(messages)) entry.callback();
       await vi.advanceTimersByTimeAsync(50);
       return messages;
     };
@@ -1070,138 +1493,242 @@ describe("floating sidebar integration", () => {
     expect((await reveal()).scrollTop).toBe(320);
   });
 
-  it.each(["右侧并排", "阅读器侧栏"])("preserves chat width on PDF zoom and fits PDF scale when dragging the splitter in %s", async (mode) => {
-    let hostWidth = 1600;
-    vi.spyOn(window, "innerWidth", "get").mockImplementation(() => hostWidth);
-    let sidebar = await openSidebar();
-    chooseMode(mode);
-    const chatWidth = () => Number(sidebar.column.getAttribute("width"));
-    let measuredWidth: number | undefined;
-    sidebar.column.getBoundingClientRect = () => new DOMRect(hostWidth - (measuredWidth ?? chatWidth()), 0, measuredWidth ?? chatWidth(), 800);
-    const iframe = document.createElement("iframe"); document.body.append(iframe);
-    const readerWidth = () => hostWidth - chatWidth() - 100;
-    Object.defineProperty(iframe, "offsetWidth", { configurable: true, get: readerWidth });
-    Object.defineProperty(iframe, "offsetHeight", { configurable: true, value: 600 });
-    iframe.getBoundingClientRect = () => new DOMRect(100, 100, readerWidth(), 600);
-    const pdf = iframe.contentWindow!;
-    Object.defineProperty(pdf, "innerWidth", { configurable: true, get: readerWidth });
-    pdf.document.body.innerHTML = '<div id="viewerContainer"><div class="pdfViewer"><div class="page" data-page-number="1"><canvas width="1000" height="50"></canvas></div></div></div>';
-    const container = pdf.document.getElementById("viewerContainer")!;
-    Object.defineProperty(container, "clientWidth", { configurable: true, get: readerWidth });
-    Object.defineProperty(container, "offsetWidth", { configurable: true, get: readerWidth });
-    container.getBoundingClientRect = () => new DOMRect(0, 0, readerWidth(), 600);
-    let scale = 1, value: string | number = "page-width";
-    const viewer = { currentScale: 1, currentPageNumber: 1,
-      get currentScaleValue() { return value; }, set currentScaleValue(next: string | number) { value = next; scale = typeof next === "number" ? next : 1; this.currentScale = scale; },
-    };
-    const listeners = new Map<string, () => void>();
-    (pdf as any).wrappedJSObject = { PDFViewerApplication: { pdfViewer: viewer, eventBus: { on: (name: string, cb: () => void) => listeners.set(name, cb), off: (name: string) => listeners.delete(name) } } };
-    const canvas = pdf.document.querySelector("canvas")!;
-    canvas.getBoundingClientRect = () => new DOMRect(0, 0, 1000 * scale, 50 * scale);
-    Object.defineProperty(canvas, "getContext", { value: () => ({ getImageData: (x: number, _y: number, width: number, height: number) => {
-      const data = new Uint8ClampedArray(width * height * 4).fill(255), at = (x === 0 ? 50 : width - 101) * 4;
-      data[at] = data[at + 1] = data[at + 2] = 0;
-      return { data };
-    } }) });
-    (readers.get("pdf-a") as any)._iframeWindow = pdf;
-    sidebar.mount.querySelector<HTMLInputElement>(".zai-docked-tight-toggle")!.click();
-    expect(viewer.currentScale).toBe(1);
-    const initialWidth = chatWidth();
-    viewer.currentScaleValue = 1.1;
-    listeners.get("scalechanging")!();
-    await vi.advanceTimersByTimeAsync(50);
-    expect(chatWidth()).toBe(initialWidth);
-    expect(viewer.currentScale).toBe(1.1);
-    const enlargedWidth = chatWidth();
-    viewer.currentScaleValue = 0.9;
-    listeners.get("scalechanging")!();
-    await vi.advanceTimersByTimeAsync(50);
-    expect(chatWidth()).toBe(initialWidth);
-    expect(viewer.currentScale).toBe(0.9);
-    expect(enlargedWidth).toBeGreaterThanOrEqual(320);
-    hostWidth = 2000;
-    window.dispatchEvent(new Event("resize"));
-    listeners.get("pagerendered")!();
-    await vi.advanceTimersByTimeAsync(50);
-    expect(chatWidth()).toBe(initialWidth);
-    expect(parseFloat((sidebar.column as HTMLElement).style.maxWidth)).toBeGreaterThanOrEqual(chatWidth());
-    expect(viewer.currentScale).toBe(0.9);
-    // Automatic layout can legitimately create a column wider than the old 760px manual cap.
-    sidebar.column.setAttribute("width", "900");
-    (sidebar.column as HTMLElement).style.width = "900px";
-    (sidebar.column as HTMLElement).style.maxWidth = "900px";
-    const capture = vi.fn(), release = vi.fn();
-    Object.defineProperties(sidebar.splitter, {
-      setCapture: { configurable: true, value: capture },
-      releaseCapture: { configurable: true, value: release },
-    });
-    measuredWidth = chatWidth(); // Real chrome layout may lag width attributes during mousemove.
-    const startWidth = chatWidth();
-    const startClientX = hostWidth - startWidth - 2; // Grab within the splitter, not the column edge.
-    const startScreenX = startClientX + 80;
-    sidebar.splitter.dispatchEvent(new MouseEvent("mousedown", { button: 0, clientX: startClientX, screenX: startScreenX, bubbles: true }));
-    for (const [index, width] of [900, 898, 880, 900, 600, 580, 560, 580, 900].entries()) {
-      // Reader iframe and chrome can report different local coordinates.
-      window.dispatchEvent(new MouseEvent("mousemove", {
-        clientX: index % 2 ? hostWidth - width : 20,
-        screenX: startScreenX + startWidth - width,
-      }));
-      expect(chatWidth()).toBe(width);
+  it.each(["右侧并排", "阅读器侧栏"])(
+    "preserves chat width on PDF zoom and fits PDF scale when dragging the splitter in %s",
+    async (mode) => {
+      let hostWidth = 1600;
+      vi.spyOn(window, "innerWidth", "get").mockImplementation(() => hostWidth);
+      let sidebar = await openSidebar();
+      chooseMode(mode);
+      const chatWidth = () => Number(sidebar.column.getAttribute("width"));
+      const translationWidth = () =>
+        Number(sidebar.translationColumn.getAttribute("width"));
+      let measuredWidth: number | undefined;
+      sidebar.column.getBoundingClientRect = () =>
+        new DOMRect(
+          hostWidth - (measuredWidth ?? chatWidth()),
+          0,
+          measuredWidth ?? chatWidth(),
+          800,
+        );
+      const iframe = document.createElement("iframe");
+      document.body.append(iframe);
+      const splitterWidth = 12; // Two 6px vertical drag targets.
+      const readerWidth = () =>
+        hostWidth - chatWidth() - translationWidth() - 100 - splitterWidth;
+      const fittedReaderScale = () =>
+        Math.max(0.75, (readerWidth() - 24) / 1000);
+      Object.defineProperty(iframe, "offsetWidth", {
+        configurable: true,
+        get: readerWidth,
+      });
+      Object.defineProperty(iframe, "offsetHeight", {
+        configurable: true,
+        value: 600,
+      });
+      iframe.getBoundingClientRect = () =>
+        new DOMRect(100, 100, readerWidth(), 600);
+      const pdf = iframe.contentWindow!;
+      Object.defineProperty(pdf, "innerWidth", {
+        configurable: true,
+        get: readerWidth,
+      });
+      pdf.document.body.innerHTML =
+        '<div id="viewerContainer"><div class="pdfViewer"><div class="page" data-page-number="1"><canvas width="1000" height="50"></canvas></div></div></div>';
+      const container = pdf.document.getElementById("viewerContainer")!;
+      Object.defineProperty(container, "clientWidth", {
+        configurable: true,
+        get: readerWidth,
+      });
+      Object.defineProperty(container, "offsetWidth", {
+        configurable: true,
+        get: readerWidth,
+      });
+      container.getBoundingClientRect = () =>
+        new DOMRect(0, 0, readerWidth(), 600);
+      let scale = 1,
+        value: string | number = "page-width";
+      const viewer = {
+        currentScale: 1,
+        currentPageNumber: 1,
+        get currentScaleValue() {
+          return value;
+        },
+        set currentScaleValue(next: string | number) {
+          value = next;
+          scale = typeof next === "number" ? next : 1;
+          this.currentScale = scale;
+        },
+      };
+      const listeners = new Map<string, () => void>();
+      (pdf as any).wrappedJSObject = {
+        PDFViewerApplication: {
+          pdfViewer: viewer,
+          eventBus: {
+            on: (name: string, cb: () => void) => listeners.set(name, cb),
+            off: (name: string) => listeners.delete(name),
+          },
+        },
+      };
+      const canvas = pdf.document.querySelector("canvas")!;
+      canvas.getBoundingClientRect = () =>
+        new DOMRect(0, 0, 1000 * scale, 50 * scale);
+      Object.defineProperty(canvas, "getContext", {
+        value: () => ({
+          getImageData: (
+            x: number,
+            _y: number,
+            width: number,
+            height: number,
+          ) => {
+            const data = new Uint8ClampedArray(width * height * 4).fill(255),
+              at = (x === 0 ? 50 : width - 101) * 4;
+            data[at] = data[at + 1] = data[at + 2] = 0;
+            return { data };
+          },
+        }),
+      });
+      (readers.get("pdf-a") as any)._iframeWindow = pdf;
+      sidebar.mount
+        .querySelector<HTMLInputElement>(".zai-docked-tight-toggle")!
+        .click();
+      expect(viewer.currentScale).toBe(1);
+      const initialWidth = chatWidth();
+      viewer.currentScaleValue = 1.1;
+      listeners.get("scalechanging")!();
+      await vi.advanceTimersByTimeAsync(50);
+      expect(chatWidth()).toBe(initialWidth);
+      expect(viewer.currentScale).toBe(1.1);
+      const enlargedWidth = chatWidth();
+      viewer.currentScaleValue = 0.9;
+      listeners.get("scalechanging")!();
+      await vi.advanceTimersByTimeAsync(50);
+      expect(chatWidth()).toBe(initialWidth);
+      expect(viewer.currentScale).toBe(0.9);
+      expect(enlargedWidth).toBeGreaterThanOrEqual(260);
+      hostWidth = 2000;
+      window.dispatchEvent(new Event("resize"));
       listeners.get("pagerendered")!();
       await vi.advanceTimersByTimeAsync(50);
-      expect(chatWidth()).toBe(width);
-      expect(viewer.currentScale).toBeCloseTo((hostWidth - 100 - width - 24) / 1000);
-    }
-    expect(chatWidth()).toBe(900);
-    expect(viewer.currentScale).toBeCloseTo((hostWidth - 100 - 900 - 24) / 1000);
-    listeners.get("pagerendered")!();
-    await vi.advanceTimersByTimeAsync(50);
-    expect(chatWidth()).toBe(900);
-    expect(viewer.currentScale).toBeCloseTo((hostWidth - 100 - 900 - 24) / 1000);
-    if (mode === "右侧并排")
-      expect(document.documentElement.style.getPropertyValue("--zai-docked-width")).toBe("900px");
-    measuredWidth = undefined;
-    window.dispatchEvent(new MouseEvent("mouseup"));
-    await vi.advanceTimersByTimeAsync(50);
-    expect(capture).toHaveBeenCalledExactlyOnceWith(true);
-    expect(release).toHaveBeenCalledOnce();
-    expect(chatWidth()).toBe(900);
-    expect(viewer.currentScale).toBeCloseTo((hostWidth - 100 - 900 - 24) / 1000);
-    expect(Math.abs(readerWidth() - (1000 * viewer.currentScale + 24))).toBeLessThanOrEqual(1);
-    const fittedScale = viewer.currentScale;
-    window.dispatchEvent(new MouseEvent("mousemove", { clientX: hostWidth - 500 }));
-    expect(chatWidth()).toBe(900);
-    expect(viewer.currentScale).toBe(fittedScale);
-    expect(sidebar.mount.querySelector(".messages")?.textContent).toContain("Answer for paper A");
-    const prefs = (globalThis as any).Zotero.Prefs;
-    const widthKey = mode === "右侧并排" ? "dockedAiWidth" : "aiWidth";
-    expect(JSON.parse(prefs.get("extensions.zotero-ai-sidebar.readerLayout"))[widthKey]).toBe(900);
-    const columnRect = sidebar.column.getBoundingClientRect;
-    unregisterSidebar();
-    registerSidebar();
-    sidebar = windowSidebars.get(window)!;
-    sidebar.column.getBoundingClientRect = columnRect;
-    await vi.advanceTimersByTimeAsync(2000);
-    expect(chatWidth()).toBe(900);
-    vi.spyOn(window, "resizeBy").mockImplementation(() => {});
-    sidebar.toggleButton!.dispatchEvent(new Event("command"));
-    await vi.advanceTimersByTimeAsync(50);
-    sidebar.toggleButton!.dispatchEvent(new Event("command"));
-    await vi.advanceTimersByTimeAsync(50);
-    expect(chatWidth()).toBe(900);
-    expect(sidebar.mount.querySelector(".messages")?.textContent).toContain("Answer for paper A");
-  });
+      expect(chatWidth()).toBe(initialWidth);
+      expect(
+        parseFloat((sidebar.column as HTMLElement).style.maxWidth),
+      ).toBeGreaterThanOrEqual(chatWidth());
+      expect(viewer.currentScale).toBe(0.9);
+      // Automatic layout can legitimately create a column wider than the old 760px manual cap.
+      sidebar.column.setAttribute("width", "900");
+      (sidebar.column as HTMLElement).style.width = "900px";
+      (sidebar.column as HTMLElement).style.maxWidth = "900px";
+      const capture = vi.fn(),
+        release = vi.fn();
+      Object.defineProperties(sidebar.splitter, {
+        setCapture: { configurable: true, value: capture },
+        releaseCapture: { configurable: true, value: release },
+      });
+      measuredWidth = chatWidth(); // Real chrome layout may lag width attributes during mousemove.
+      const startWidth = chatWidth();
+      const startClientX = hostWidth - startWidth - 2; // Grab within the splitter, not the column edge.
+      const startScreenX = startClientX + 80;
+      sidebar.splitter.dispatchEvent(
+        new MouseEvent("mousedown", {
+          button: 0,
+          clientX: startClientX,
+          screenX: startScreenX,
+          bubbles: true,
+        }),
+      );
+      for (const [index, width] of [
+        900, 898, 880, 900, 600, 580, 560, 580, 900,
+      ].entries()) {
+        // Reader iframe and chrome can report different local coordinates.
+        window.dispatchEvent(
+          new MouseEvent("mousemove", {
+            clientX: index % 2 ? hostWidth - width : 20,
+            screenX: startScreenX + startWidth - width,
+          }),
+        );
+        const expectedWidth = chatWidth();
+        expect(expectedWidth).toBeGreaterThanOrEqual(260);
+        expect(expectedWidth).toBeLessThanOrEqual(width);
+        listeners.get("pagerendered")!();
+        await vi.advanceTimersByTimeAsync(50);
+        expect(chatWidth()).toBe(expectedWidth);
+        expect(viewer.currentScale).toBeCloseTo(fittedReaderScale());
+      }
+      const finalWidth = chatWidth();
+      expect(finalWidth).toBeGreaterThanOrEqual(260);
+      expect(finalWidth).toBeLessThan(900);
+      expect(chatWidth()).toBe(finalWidth);
+      expect(viewer.currentScale).toBeCloseTo(fittedReaderScale());
+      listeners.get("pagerendered")!();
+      await vi.advanceTimersByTimeAsync(50);
+      expect(chatWidth()).toBe(finalWidth);
+      expect(viewer.currentScale).toBeCloseTo(fittedReaderScale());
+      if (mode === "右侧并排")
+        expect(
+          document.documentElement.style.getPropertyValue("--zai-docked-width"),
+        ).toBe(`${finalWidth}px`);
+      measuredWidth = undefined;
+      window.dispatchEvent(new MouseEvent("mouseup"));
+      await vi.advanceTimersByTimeAsync(50);
+      expect(capture).toHaveBeenCalledExactlyOnceWith(true);
+      expect(release).toHaveBeenCalledOnce();
+      expect(chatWidth()).toBe(finalWidth);
+      expect(viewer.currentScale).toBeCloseTo(fittedReaderScale());
+      expect(
+        Math.abs(readerWidth() - (1000 * viewer.currentScale + 24)),
+      ).toBeLessThanOrEqual(4);
+      const fittedScale = viewer.currentScale;
+      window.dispatchEvent(
+        new MouseEvent("mousemove", { clientX: hostWidth - 500 }),
+      );
+      expect(chatWidth()).toBe(finalWidth);
+      expect(viewer.currentScale).toBe(fittedScale);
+      expect(sidebar.mount.querySelector(".messages")?.textContent).toContain(
+        "Answer for paper A",
+      );
+      const prefs = (globalThis as any).Zotero.Prefs;
+      const widthKey = mode === "右侧并排" ? "dockedAiWidth" : "aiWidth";
+      expect(
+        JSON.parse(prefs.get("extensions.zotero-ai-sidebar.readerLayout"))[
+          widthKey
+        ],
+      ).toBe(finalWidth);
+      const columnRect = sidebar.column.getBoundingClientRect;
+      unregisterSidebar();
+      registerSidebar();
+      sidebar = windowSidebars.get(window)!;
+      sidebar.column.getBoundingClientRect = columnRect;
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(chatWidth()).toBe(finalWidth);
+      vi.spyOn(window, "resizeBy").mockImplementation(() => {});
+      sidebar.toggleButton!.dispatchEvent(new Event("command"));
+      await vi.advanceTimersByTimeAsync(50);
+      sidebar.toggleButton!.dispatchEvent(new Event("command"));
+      await vi.advanceTimersByTimeAsync(50);
+      expect(chatWidth()).toBe(finalWidth);
+      expect(sidebar.mount.querySelector(".messages")?.textContent).toContain(
+        "Answer for paper A",
+      );
+    },
+  );
 
   it("toggles a clearly labeled spacing checkbox in Layout without losing the draft or conversation", async () => {
     const sidebar = await openSidebar();
-    expect(sidebar.mount.querySelector<HTMLInputElement>(".zai-docked-tight-toggle")?.checked).toBe(false);
+    expect(
+      sidebar.mount.querySelector<HTMLInputElement>(".zai-docked-tight-toggle")
+        ?.checked,
+    ).toBe(false);
     const iframe = document.createElement("iframe");
     document.body.append(iframe);
     const pdf = iframe.contentWindow!;
-    pdf.document.body.innerHTML = '<div class="pdfViewer"><div class="page">PDF</div></div>';
+    pdf.document.body.innerHTML =
+      '<div class="pdfViewer"><div class="page">PDF</div></div>';
     (readers.get("pdf-a") as any)._iframeWindow = pdf;
     chooseMode("右侧并排");
-    const toggle = sidebar.mount.querySelector<HTMLInputElement>(".zai-docked-tight-toggle")!;
+    const toggle = sidebar.mount.querySelector<HTMLInputElement>(
+      ".zai-docked-tight-toggle",
+    )!;
     expect(toggle).toBeTruthy();
     expect(toggle.closest(".header-layout-menu")).toBeTruthy();
     expect(toggle.type).toBe("checkbox");
@@ -1209,9 +1736,15 @@ describe("floating sidebar integration", () => {
     const label = toggle.parentElement?.textContent;
     expect(label).toContain("自动调整 PDF 页边距");
     expect(label).toContain("保持侧栏宽度，窗口随 PDF 缩放自动变宽或收窄");
-    expect(toggle.closest(".preset-switcher-row")?.querySelector(":scope > .zai-docked-tight-toggle")).toBeNull();
+    expect(
+      toggle
+        .closest(".preset-switcher-row")
+        ?.querySelector(":scope > .zai-docked-tight-toggle"),
+    ).toBeNull();
     expect(toggle.checked).toBe(false);
-    const input = sidebar.mount.querySelector<HTMLTextAreaElement>(".input-row textarea")!;
+    const input = sidebar.mount.querySelector<HTMLTextAreaElement>(
+      ".input-row textarea",
+    )!;
     input.value = "draft while comparing";
     input.dispatchEvent(new Event("input", { bubbles: true }));
     const messages = sidebar.mount.querySelector<HTMLElement>(".messages")!;
@@ -1219,7 +1752,9 @@ describe("floating sidebar integration", () => {
     toggle.click();
     expect(toggle.checked).toBe(true);
     expect(sidebar.mount.classList.contains("zai-reading-tight")).toBe(true);
-    expect(pdf.document.getElementById("zai-floating-pdf-align")?.textContent).toContain("flex-start");
+    expect(
+      pdf.document.getElementById("zai-floating-pdf-align")?.textContent,
+    ).toContain("flex-start");
     expect(pdf.document.querySelector(".zai-floating-reader-space")).toBeNull();
     expect(sidebar.mount.querySelector("textarea")).toBe(input);
     expect(input.value).toBe("draft while comparing");
@@ -1231,14 +1766,27 @@ describe("floating sidebar integration", () => {
     toggle.click();
     chooseMode("阅读器侧栏");
     expect(sidebar.mount.classList.contains("zai-reading-tight")).toBe(true);
-    expect(sidebar.mount.querySelector<HTMLInputElement>(".zai-docked-tight-toggle")?.checked).toBe(true);
-    expect(pdf.document.getElementById("zai-floating-pdf-align")).not.toBeNull();
-    sidebar.mount.querySelector<HTMLInputElement>(".zai-docked-tight-toggle")!.click();
+    expect(
+      sidebar.mount.querySelector<HTMLInputElement>(".zai-docked-tight-toggle")
+        ?.checked,
+    ).toBe(true);
+    expect(
+      pdf.document.getElementById("zai-floating-pdf-align"),
+    ).not.toBeNull();
+    sidebar.mount
+      .querySelector<HTMLInputElement>(".zai-docked-tight-toggle")!
+      .click();
     expect(sidebar.mount.classList.contains("zai-reading-tight")).toBe(false);
     expect(pdf.document.getElementById("zai-floating-pdf-align")).toBeNull();
     chooseMode("右侧并排");
-    expect(sidebar.mount.querySelector<HTMLInputElement>(".zai-docked-tight-toggle")?.checked).toBe(false);
-    expect(sidebar.mount.querySelector(".zai-docked-tight-toggle")?.parentElement?.textContent).toBe(label);
+    expect(
+      sidebar.mount.querySelector<HTMLInputElement>(".zai-docked-tight-toggle")
+        ?.checked,
+    ).toBe(false);
+    expect(
+      sidebar.mount.querySelector(".zai-docked-tight-toggle")?.parentElement
+        ?.textContent,
+    ).toBe(label);
     chooseMode("浮动模式");
     expect(sidebar.mount.querySelector(".zai-docked-tight-toggle")).toBeNull();
     expect(sidebar.mount.classList.contains("zai-reading-tight")).toBe(false);
@@ -1247,48 +1795,120 @@ describe("floating sidebar integration", () => {
   it("remembers the shared PDF margin checkbox after sidebar registration", async () => {
     let sidebar = await openSidebar();
     chooseMode("阅读器侧栏");
-    sidebar.mount.querySelector<HTMLInputElement>(".zai-docked-tight-toggle")!.click();
-    expect(JSON.parse(String(Zotero.Prefs.get("extensions.zotero-ai-sidebar.localUiSettings", true))).dockedTightLayout).toBe(true);
+    sidebar.mount
+      .querySelector<HTMLInputElement>(".zai-docked-tight-toggle")!
+      .click();
+    expect(
+      JSON.parse(
+        String(
+          Zotero.Prefs.get(
+            "extensions.zotero-ai-sidebar.localUiSettings",
+            true,
+          ),
+        ),
+      ).dockedTightLayout,
+    ).toBe(true);
     unregisterSidebar();
     registerSidebar();
     await vi.advanceTimersByTimeAsync(2000);
     sidebar = windowSidebars.get(window)!;
-    expect(sidebar.mount.querySelector<HTMLInputElement>(".zai-docked-tight-toggle")?.checked).toBe(true);
+    expect(
+      sidebar.mount.querySelector<HTMLInputElement>(".zai-docked-tight-toggle")
+        ?.checked,
+    ).toBe(true);
     chooseMode("右侧并排");
-    expect(sidebar.mount.querySelector<HTMLInputElement>(".zai-docked-tight-toggle")?.checked).toBe(true);
-    sidebar.mount.querySelector<HTMLInputElement>(".zai-docked-tight-toggle")!.click();
+    expect(
+      sidebar.mount.querySelector<HTMLInputElement>(".zai-docked-tight-toggle")
+        ?.checked,
+    ).toBe(true);
+    sidebar.mount
+      .querySelector<HTMLInputElement>(".zai-docked-tight-toggle")!
+      .click();
     chooseMode("阅读器侧栏");
-    expect(sidebar.mount.querySelector<HTMLInputElement>(".zai-docked-tight-toggle")?.checked).toBe(false);
+    expect(
+      sidebar.mount.querySelector<HTMLInputElement>(".zai-docked-tight-toggle")
+        ?.checked,
+    ).toBe(false);
   });
 
-  it.each(["阅读器侧栏", "右侧并排"])("offers separate native notes in %s through the Mode menu", async display => {
-    const sidebar = await openSidebar();
-    chooseMode(display);
-    const draft = sidebar.mount.querySelector<HTMLTextAreaElement>(".input-row textarea")!;
-    draft.value = "draft before note location changes";
-    draft.dispatchEvent(new Event("input", { bubbles: true }));
-    const option = [...sidebar.mount.querySelectorAll<HTMLButtonElement>(".header-layout-choice-option")].find(b => b.textContent === "独立窗口")!;
-    expect(option.closest(".header-layout-menu")).toBeTruthy();
-    option.click();
-    const native = { closed: true, close: vi.fn(() => { native.closed = true; }) };
-    host.ZoteroPane.openNote = vi.fn(async () => { native.closed = false; });
-    host.ZoteroPane.findNoteWindow = vi.fn(() => native.closed ? null : native);
-    vi.spyOn(noteDedicated, "resolveTargetNote").mockResolvedValue({ note: { id: 901, parentID: 101 } as Zotero.Item, created: false });
-    sidebar.mount.querySelector<HTMLButtonElement>(".open-note-button")!.click();
-    await vi.advanceTimersByTimeAsync(200);
-    expect(host.ZoteroPane.openNote).toHaveBeenCalledExactlyOnceWith(901, { openInWindow: true });
-    expect(sidebar.mount.querySelector(".open-note-button")?.textContent).toBe("关闭笔记");
-    expect(sidebar.mount.querySelector("textarea")!.value).toBe("draft before note location changes");
-    expect(sidebar.mount.querySelector(".messages")?.textContent).toContain("Answer for paper A");
-    chooseMode("当前窗口");
-    expect(sidebar.mount.querySelector(".open-note-button")?.textContent).toBe("关闭笔记");
-    sidebar.mount.querySelector<HTMLButtonElement>(".open-note-button")!.click();
-    expect(native.close).toHaveBeenCalledOnce();
-    expect(sidebar.mount.querySelector(".open-note-button")?.textContent).toBe("打开笔记");
-    expect(JSON.parse(String(Zotero.Prefs.get("extensions.zotero-ai-sidebar.localUiSettings", true))).noteWindowMode).toBe("inline");
-    chooseMode("浮动模式");
-    expect([...sidebar.mount.querySelectorAll(".header-layout-choice-option")].find(b => b.textContent === "当前窗口")).toBeUndefined();
-  });
+  it.each(["阅读器侧栏", "右侧并排"])(
+    "offers separate native notes in %s through the Mode menu",
+    async (display) => {
+      const sidebar = await openSidebar();
+      chooseMode(display);
+      const draft = sidebar.mount.querySelector<HTMLTextAreaElement>(
+        ".input-row textarea",
+      )!;
+      draft.value = "draft before note location changes";
+      draft.dispatchEvent(new Event("input", { bubbles: true }));
+      const option = [
+        ...sidebar.mount.querySelectorAll<HTMLButtonElement>(
+          ".header-layout-choice-option",
+        ),
+      ].find((b) => b.textContent === "独立窗口")!;
+      expect(option.closest(".header-layout-menu")).toBeTruthy();
+      option.click();
+      const native = {
+        closed: true,
+        close: vi.fn(() => {
+          native.closed = true;
+        }),
+      };
+      host.ZoteroPane.openNote = vi.fn(async () => {
+        native.closed = false;
+      });
+      host.ZoteroPane.findNoteWindow = vi.fn(() =>
+        native.closed ? null : native,
+      );
+      vi.spyOn(noteDedicated, "resolveTargetNote").mockResolvedValue({
+        note: { id: 901, parentID: 101 } as Zotero.Item,
+        created: false,
+      });
+      sidebar.mount
+        .querySelector<HTMLButtonElement>(".open-note-button")!
+        .click();
+      await vi.advanceTimersByTimeAsync(200);
+      expect(host.ZoteroPane.openNote).toHaveBeenCalledExactlyOnceWith(901, {
+        openInWindow: true,
+      });
+      expect(
+        sidebar.mount.querySelector(".open-note-button")?.textContent,
+      ).toBe("关闭笔记");
+      expect(sidebar.mount.querySelector("textarea")!.value).toBe(
+        "draft before note location changes",
+      );
+      expect(sidebar.mount.querySelector(".messages")?.textContent).toContain(
+        "Answer for paper A",
+      );
+      chooseMode("当前窗口");
+      expect(
+        sidebar.mount.querySelector(".open-note-button")?.textContent,
+      ).toBe("关闭笔记");
+      sidebar.mount
+        .querySelector<HTMLButtonElement>(".open-note-button")!
+        .click();
+      expect(native.close).toHaveBeenCalledOnce();
+      expect(
+        sidebar.mount.querySelector(".open-note-button")?.textContent,
+      ).toBe("打开笔记");
+      expect(
+        JSON.parse(
+          String(
+            Zotero.Prefs.get(
+              "extensions.zotero-ai-sidebar.localUiSettings",
+              true,
+            ),
+          ),
+        ).noteWindowMode,
+      ).toBe("inline");
+      chooseMode("浮动模式");
+      expect(
+        [
+          ...sidebar.mount.querySelectorAll(".header-layout-choice-option"),
+        ].find((b) => b.textContent === "当前窗口"),
+      ).toBeUndefined();
+    },
+  );
 
   it("aligns PDF pages only while the floating answer is visible", async () => {
     await openSidebar();
@@ -1379,7 +1999,7 @@ describe("floating sidebar integration", () => {
     window.dispatchEvent(pointer("pointermove", 100, 240));
     window.dispatchEvent(pointer("pointerup", 100, 240));
     const left = sidebar.mount.querySelector<HTMLElement>(
-      '[data-zai-floating-window]',
+      "[data-zai-floating-window]",
     )!.style.left;
     const settings = JSON.parse(
       String(
@@ -1394,9 +2014,8 @@ describe("floating sidebar integration", () => {
     const restored = windowSidebars.get(window)!;
     expect(restored.mount.parentElement).toBe(document.documentElement);
     expect(
-      restored.mount.querySelector<HTMLElement>(
-        '[data-zai-floating-window]',
-      )!.style.left,
+      restored.mount.querySelector<HTMLElement>("[data-zai-floating-window]")!
+        .style.left,
     ).toBe(left);
     expect(
       restored.mount.querySelectorAll("[data-zai-floating-panel]"),
@@ -1444,9 +2063,7 @@ describe("floating sidebar integration", () => {
     const sidebar = await openSidebar();
     chooseMode("浮动模式");
     sidebar.mount
-      .querySelector<HTMLButtonElement>(
-        '[data-zai-float-action="hide"]',
-      )!
+      .querySelector<HTMLButtonElement>('[data-zai-float-action="hide"]')!
       .click();
     expect(
       sidebar.mount.querySelector<HTMLElement>(

@@ -1,7 +1,8 @@
-export type ProviderKind = 'anthropic' | 'openai';
-export type ReasoningEffort = 'none' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
-export type ReasoningSummary = 'auto' | 'concise' | 'detailed' | 'none';
-export type AgentPermissionMode = 'default' | 'yolo';
+export type ProviderKind = "anthropic" | "openai";
+export type ReasoningEffort =
+  "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+export type ReasoningSummary = "auto" | "concise" | "detailed" | "none";
+export type AgentPermissionMode = "default" | "yolo";
 // Vendor distinguishes who actually answers an Anthropic-protocol request.
 // Same Messages API, different thinking-mode dialects:
 //   claude   = Anthropic Claude (real or reverse-proxied) — adaptive vs
@@ -11,15 +12,11 @@ export type AgentPermissionMode = 'default' | 'yolo';
 //              {thinking: {type: "enabled"}} + {output_config.effort}.
 //   compat   = unknown third-party proxy — never send `thinking` so an
 //              endpoint that doesn't recognize the field can't 400.
-export type AnthropicVendor = 'claude' | 'deepseek' | 'compat';
+export type AnthropicVendor = "claude" | "deepseek" | "compat";
 // OpenAI-compatible model suggestion selection. This is a UI preference only;
 // it never changes the provider transport or request body.
 export type ModelSuggestionGroup =
-  | 'auto'
-  | 'openai'
-  | 'deepseek'
-  | 'claude'
-  | 'custom';
+  "auto" | "openai" | "deepseek" | "claude" | "custom";
 
 export interface ModelPreset {
   id: string;
@@ -55,7 +52,7 @@ export interface ModelPreset {
     // Non-official OpenAI-compatible relays use prompt_cache_key/session_id
     // automatically. Set to false after a failed cache test to disable it.
     enableRelayPromptCache?: boolean;
-    testStatus?: 'ok' | 'failed';
+    testStatus?: "ok" | "failed";
     // Anthropic-only — written by storage normalize / preset UI:
     vendor?: AnthropicVendor;
     // OpenAI-compatible UI-only model suggestion group. `auto` derives from
@@ -78,13 +75,13 @@ export function usesOpenAIChatCompletions(preset: ModelPreset): boolean {
 }
 
 export const DEFAULT_BASE_URLS: Record<ProviderKind, string> = {
-  anthropic: '',
-  openai: '',
+  anthropic: "",
+  openai: "",
 };
 
 export const DEFAULT_MODELS: Record<ProviderKind, string> = {
-  anthropic: '',
-  openai: '',
+  anthropic: "",
+  openai: "",
 };
 
 // =================================================================
@@ -111,31 +108,32 @@ export const DEFAULT_MODELS: Record<ProviderKind, string> = {
 //                    reject xhigh and translator promotes it to `max`.
 export interface ModelDescriptor {
   id: string;
-  thinkingDialect?: 'adaptive' | 'enabled';
+  thinkingDialect?: "adaptive" | "enabled";
   acceptsXhigh?: boolean;
 }
 
-export const MODEL_CATALOG: Record<'openai' | AnthropicVendor, ModelDescriptor[]> = {
+export const MODEL_CATALOG: Record<
+  "openai" | AnthropicVendor,
+  ModelDescriptor[]
+> = {
   openai: [
-    { id: 'gpt-5.6-sol' },
-    { id: 'gpt-5.6-terra' },
-    { id: 'gpt-5.6-luna' },
-    { id: 'gpt-5.5' },
-    { id: 'gpt-5.4' },
-    { id: 'gpt-5.4-mini' },
-    { id: 'gpt-5.3-codex' },
-    { id: 'gpt-5.2' },
+    { id: "gpt-6.1-sol" },
+    { id: "gpt-5.6-sol" },
+    { id: "gpt-5.6-terra" },
+    { id: "gpt-5.6-luna" },
+    { id: "gpt-5.5" },
+    { id: "gpt-5.4" },
+    { id: "gpt-5.4-mini" },
+    { id: "gpt-5.3-codex" },
+    { id: "gpt-5.2" },
   ],
   claude: [
-    { id: 'claude-opus-4-7',           thinkingDialect: 'adaptive', acceptsXhigh: true },
-    { id: 'claude-opus-4-6',           thinkingDialect: 'adaptive' },
-    { id: 'claude-sonnet-4-6',         thinkingDialect: 'adaptive' },
-    { id: 'claude-haiku-4-5-20251001', thinkingDialect: 'enabled'  },
+    { id: "claude-opus-4-7", thinkingDialect: "adaptive", acceptsXhigh: true },
+    { id: "claude-opus-4-6", thinkingDialect: "adaptive" },
+    { id: "claude-sonnet-4-6", thinkingDialect: "adaptive" },
+    { id: "claude-haiku-4-5-20251001", thinkingDialect: "enabled" },
   ],
-  deepseek: [
-    { id: 'deepseek-v4-flash' },
-    { id: 'deepseek-v4-pro' },
-  ],
+  deepseek: [{ id: "deepseek-v4-flash" }, { id: "deepseek-v4-pro" }],
   compat: [],
 };
 
@@ -144,7 +142,7 @@ export const MODEL_CATALOG: Record<'openai' | AnthropicVendor, ModelDescriptor[]
 // cannot be identified safely. It intentionally has no suggestions; users can
 // still add any model ID manually.
 export const MODEL_SUGGESTIONS: Record<
-  'openai' | AnthropicVendor | 'custom',
+  "openai" | AnthropicVendor | "custom",
   string[]
 > = {
   openai: MODEL_CATALOG.openai.map((m) => m.id),
@@ -166,50 +164,51 @@ export function findClaudeDescriptor(model: string): ModelDescriptor {
   if (/(opus-4-8|opus-4-7|opus-4-6|sonnet-4-6|mythos)/i.test(model)) {
     return {
       id: model,
-      thinkingDialect: 'adaptive',
+      thinkingDialect: "adaptive",
       acceptsXhigh: /opus-4-[78]/i.test(model),
     };
   }
-  return { id: model, thinkingDialect: 'enabled' };
+  return { id: model, thinkingDialect: "enabled" };
 }
 
-export const DEFAULT_REASONING_EFFORT: ReasoningEffort = 'medium';
-export const DEFAULT_REASONING_SUMMARY: ReasoningSummary = 'concise';
+export const DEFAULT_REASONING_EFFORT: ReasoningEffort = "medium";
+export const DEFAULT_REASONING_SUMMARY: ReasoningSummary = "concise";
 
 export const REASONING_EFFORT_OPTIONS: Array<[ReasoningEffort, string]> = [
-  ['none', '关闭思考'],
-  ['minimal', 'Minimal - 最少推理'],
-  ['low', 'Low - 快速，较少推理'],
-  ['medium', 'Medium - 默认平衡'],
-  ['high', 'High - 更强推理'],
-  ['xhigh', 'Extra high - 超高推理'],
-  ['max', 'Max - 最高推理'],
+  ["none", "关闭思考"],
+  ["minimal", "Minimal - 最少推理"],
+  ["low", "Low - 快速，较少推理"],
+  ["medium", "Medium - 默认平衡"],
+  ["high", "High - 更强推理"],
+  ["xhigh", "Extra high - 超高推理"],
+  ["max", "Max - 最高推理"],
 ];
 
 export const REASONING_SUMMARY_OPTIONS: Array<[ReasoningSummary, string]> = [
-  ['concise', 'Concise - 简短显示思考摘要'],
-  ['detailed', 'Detailed - 更详细的思考摘要'],
-  ['auto', 'Auto - 由模型决定'],
-  ['none', 'None - 不显示思考'],
+  ["concise", "Concise - 简短显示思考摘要"],
+  ["detailed", "Detailed - 更详细的思考摘要"],
+  ["auto", "Auto - 由模型决定"],
+  ["none", "None - 不显示思考"],
 ];
 
 export function newPreset(provider: ProviderKind): ModelPreset {
   const defaultModel = DEFAULT_MODELS[provider];
   return {
     id: crypto.randomUUID(),
-    label: provider === 'anthropic' ? 'Claude' : 'GPT',
+    label: provider === "anthropic" ? "Claude" : "GPT",
     provider,
-    apiKey: '',
+    apiKey: "",
     baseUrl: DEFAULT_BASE_URLS[provider],
     model: defaultModel,
     models: defaultModel ? [defaultModel] : [],
     maxTokens: 32768,
-    extras: provider === 'openai'
-      ? {
-          reasoningEffort: DEFAULT_REASONING_EFFORT,
-          reasoningSummary: DEFAULT_REASONING_SUMMARY,
-        }
-      : { reasoningEffort: DEFAULT_REASONING_EFFORT },
+    extras:
+      provider === "openai"
+        ? {
+            reasoningEffort: DEFAULT_REASONING_EFFORT,
+            reasoningSummary: DEFAULT_REASONING_SUMMARY,
+          }
+        : { reasoningEffort: DEFAULT_REASONING_EFFORT },
   };
 }
 
@@ -219,11 +218,11 @@ export function newPreset(provider: ProviderKind): ModelPreset {
 //   Claude (任一 dialect) → 不发 thinking 字段（Claude 默认就是不思考）
 //   DeepSeek       → thinking: {type: "disabled"}（DeepSeek 默认是 enabled，必须显式关）
 //   compat         → 维持原有"不发"行为
-export type TranslateThinking = 'off' | 'low' | 'medium' | 'high' | 'xhigh';
-export type TranslateContextLevel = 'none' | 'paragraph' | 'page';
-export type TranslateOverlayPosition = 'above' | 'below';
-export type TranslateTriggerMode = 'single' | 'double';
-export type TranslateOverlaySize = 'compact' | 'adaptive';
+export type TranslateThinking = "off" | "low" | "medium" | "high" | "xhigh";
+export type TranslateContextLevel = "none" | "paragraph" | "page";
+export type TranslateOverlayPosition = "above" | "below";
+export type TranslateTriggerMode = "single" | "double";
+export type TranslateOverlaySize = "compact" | "adaptive";
 
 export interface TranslateSettings {
   enabled: boolean;
@@ -243,14 +242,14 @@ export interface TranslateSettings {
 
 export const DEFAULT_TRANSLATE_SETTINGS: TranslateSettings = {
   enabled: false,
-  presetId: '',
-  model: '',
-  thinking: 'low',
-  ctxLevel: 'none',
-  overlayPosition: 'above',
-  overlaySize: 'compact',
-  triggerMode: 'single',
-  prevSentenceKey: 'Shift+Enter',
-  nextSentenceKey: 'Enter',
+  presetId: "",
+  model: "",
+  thinking: "low",
+  ctxLevel: "none",
+  overlayPosition: "above",
+  overlaySize: "compact",
+  triggerMode: "single",
+  prevSentenceKey: "Shift+Enter",
+  nextSentenceKey: "Enter",
   defaultParagraph: false,
 };

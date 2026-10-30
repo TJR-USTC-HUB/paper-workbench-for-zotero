@@ -18,14 +18,19 @@ const js = ts.transpileModule(
   { compilerOptions: { target: ts.ScriptTarget.ES2022 } },
 ).outputText;
 
-function setup(noteWidth = 0) {
-  let reserved = 484 + noteWidth;
+function setup() {
+  let reserved = 872;
   const mount = document.createElement("div");
   const messages = document.createElement("div");
   messages.className = "messages";
   mount.append(messages);
   document.body.append(mount);
-  const sidebar: any = { mount, column: {}, collapsed: false };
+  const sidebar: any = {
+    mount,
+    column: {},
+    translationColumn: {},
+    collapsed: false,
+  };
   let contentHeight = 1600;
   Object.defineProperties(messages, {
     scrollHeight: { get: () => (sidebar.collapsed ? 0 : contentHeight) },
@@ -40,7 +45,7 @@ function setup(noteWidth = 0) {
   messages.scrollTop = 600;
   states.set(mount, panelState);
   const layouts = new WeakMap<object, any>([
-    [sidebar, { dockedColumnWidth: 480 }],
+    [sidebar, { dockedColumnWidth: 480, dockedTranslationColumnWidth: 380 }],
   ]);
   const resize = vi.fn((delta: number) => {
     win.innerWidth += delta;
@@ -64,8 +69,11 @@ function setup(noteWidth = 0) {
   });
   const enter = vi.fn(() => {
     sidebar.collapsed = false;
-    layouts.set(sidebar, { dockedColumnWidth: 480 });
-    reserved = 484;
+    layouts.set(sidebar, {
+      dockedColumnWidth: 480,
+      dockedTranslationColumnWidth: 380,
+    });
+    reserved = 872;
   });
   const deps = {
     states,
@@ -73,13 +81,20 @@ function setup(noteWidth = 0) {
     preserveMessagesScrollOnToggle: (messageScroll as any)
       .preserveMessagesScrollOnToggle,
     dockedSidebarLayouts: layouts,
-    loadReaderLayoutPrefs: () => ({ dockedAiWidth: 480 }),
-    DOCKED_AI_SPLITTER_WIDTH: 4,
-    measuredElementWidth: () => 480,
+    loadReaderLayoutPrefs: () => ({
+      dockedAiWidth: 480,
+      translationWidth: 380,
+    }),
+    DOCKED_AI_SPLITTER_WIDTH: 6,
+    TRANSLATION_SPLITTER_WIDTH: 6,
+    DEFAULT_TRANSLATION_COLUMN_WIDTH: 380,
+    measuredElementWidth: (element: object) =>
+      element === sidebar.translationColumn ? 380 : 480,
     isColumnCollapsed: () => sidebar.collapsed,
     leaveDockedSidebarLayout: leave,
     enterDockedSidebarLayout: enter,
     updateToggleButton: vi.fn(),
+    syncReaderWorkspaceVisibility: vi.fn(),
   };
   const toggle = new Function(
     ...Object.keys(deps),
@@ -148,11 +163,11 @@ describe("docked chat visibility preserves the reader width", () => {
     const { win, resize, toggle, contentWidth } = setup();
     const readerWidth = contentWidth();
     toggle(true);
-    expect(resize).toHaveBeenLastCalledWith(-484, 0);
+    expect(resize).toHaveBeenLastCalledWith(-872, 0);
     expect(contentWidth()).toBe(readerWidth);
-    expect(win.outerWidth).toBe(1136);
+    expect(win.outerWidth).toBe(748);
     toggle(false);
-    expect(resize).toHaveBeenLastCalledWith(484, 0);
+    expect(resize).toHaveBeenLastCalledWith(872, 0);
     expect(contentWidth()).toBe(readerWidth);
     expect(win.outerWidth).toBe(1620);
     toggle(true);
@@ -165,7 +180,7 @@ describe("docked chat visibility preserves the reader width", () => {
     startCollapsed();
     const readerWidth = contentWidth();
     toggle(false);
-    expect(resize).toHaveBeenLastCalledWith(484, 0);
+    expect(resize).toHaveBeenLastCalledWith(872, 0);
     expect(contentWidth()).toBe(readerWidth);
   });
 
@@ -176,8 +191,8 @@ describe("docked chat visibility preserves the reader width", () => {
     toggle(false);
     toggle(false);
     expect(resize.mock.calls).toEqual([
-      [-484, 0],
-      [484, 0],
+      [-872, 0],
+      [872, 0],
     ]);
   });
 
@@ -191,14 +206,14 @@ describe("docked chat visibility preserves the reader width", () => {
     expect(contentWidth()).toBe(readerWidth);
   });
 
-  it("removes the note area on hide and reopens only the AI area", () => {
-    const { resize, toggle, contentWidth } = setup(304);
+  it("removes and restores the complete translation plus workbench width", () => {
+    const { resize, toggle, contentWidth } = setup();
     const readerWidth = contentWidth();
     toggle(true);
-    expect(resize).toHaveBeenLastCalledWith(-788, 0);
+    expect(resize).toHaveBeenLastCalledWith(-872, 0);
     expect(contentWidth()).toBe(readerWidth);
     toggle(false);
-    expect(resize).toHaveBeenLastCalledWith(484, 0);
+    expect(resize).toHaveBeenLastCalledWith(872, 0);
     expect(contentWidth()).toBe(readerWidth);
   });
 });

@@ -12,5 +12,22 @@ export default zotero({
         "@typescript-eslint/no-unused-vars": "off",
       },
     },
+    {
+      files: [
+        "scripts/dev-browser-paths.mjs",
+        "scripts/inspect-deepseek-dom.mjs",
+        "scripts/live-test-deepseek-agent.mjs",
+      ],
+      languageOptions: {
+        globals: {
+          Buffer: "readonly",
+          URL: "readonly",
+          clearTimeout: "readonly",
+          fetch: "readonly",
+          process: "readonly",
+          setTimeout: "readonly",
+        },
+      },
+    },
   ],
 });

@@ -1,6 +1,15 @@
 # 更新记录
 
-版本更新记录。已发布构建与发布说明见 [GitHub Releases](https://github.com/xuhan-rgb/zotero-ai-sidebar/releases)；[English](CHANGELOG.md)。
+版本更新记录。已发布构建与发布说明见 [GitHub Releases](https://github.com/TJR-USTC-HUB/paper-workbench-for-zotero/releases)；[English](CHANGELOG.md)。
+
+## v0.8.20.11
+
+- **Paper Workbench 首次公开发布**：以新的跨平台社区插件身份发布，同时保留完整上游历史、AGPL-3.0-or-later 许可证和原偏好设置命名空间。
+- **可拖动三栏阅读器**：PDF、自动划词翻译、笔记/对话工作区分为三个互不重叠的区域；两条竖向边界和笔记/对话横向边界均可拖动，并会恢复上次尺寸。
+- **专注笔记与对话**：可选择或新建笔记；切换、关闭或更换论文前先保存。关闭笔记后，对话占满整个工作栏；消息界面使用统一的暖中性色调。
+- **端点优先登录**：首次进入默认未登录，只填写 Base URL 和 API Key；插件通过 `/models` 发现模型，有 `gpt-6.1-sol` 时优先选择，验证连通后再在对话中显示模型和思考强度。
+- **严格选区请求**：自动翻译与 AI 解释均使用实时 PDF 选区。专注对话不会附加全文、邻近段落、旧对话、联网搜索、工具结果或其他 Zotero 条目。
+- **发布加固**：新增 Windows/macOS/Linux CI、跨平台开发脚本、双语文档、正确的 Release 资产、依赖安全升级和公开 XPI 凭据扫描。
 
 ## v0.8.20
 

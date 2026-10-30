@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |-
-        Need Chinese? Use the [Chinese form](https://github.com/xuhan-rgb/zotero-ai-sidebar/issues/new?template=feature-request.yml).
+        Need Chinese? Use the [Chinese form](https://github.com/TJR-USTC-HUB/paper-workbench-for-zotero/issues/new?template=feature-request.yml).
 
         First describe **the problem you want to solve**, then your proposed solution. This helps us assess whether and how to address it.
   - type: checkboxes

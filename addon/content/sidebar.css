@@ -40,17 +40,61 @@
 }
 
 #zai-column {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
   width: 380px;
-  min-width: 320px;
+  min-width: 260px;
   max-width: 760px;
+  overflow: hidden;
   border-left: 1px solid var(--zai-border);
   background: var(--zai-bg);
   overscroll-behavior: contain;
 }
 
+#zai-column > #zai-root {
+  flex: 1 1 0;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+:root.zai-reader-workspace-inactive #zai-column,
+:root.zai-reader-workspace-inactive #zai-column-splitter,
+:root.zai-reader-workspace-inactive #zai-translation-column,
+:root.zai-reader-workspace-inactive #zai-translation-column-splitter {
+  display: none !important;
+}
+
+/* The requested reader view has exactly three columns. Zotero's native
+   context pane returns automatically when the workbench is closed or the
+   library tab is active. */
+:root.zai-reader-workspace-active #zotero-context-splitter,
+:root.zai-reader-workspace-active #zotero-context-pane {
+  display: none !important;
+}
+
+/* Keep a useful drag range at common 1000-CSS-pixel Retina widths. The
+   defaults remain 370/300/320, but the reader may shrink to 280px when the
+   user drags either vertical boundary. */
+:root.zai-reader-workspace-active #tabs-deck {
+  min-width: 280px !important;
+}
+
+/* On genuinely narrow windows, keep the translation result alive in memory
+   and temporarily fold only its column instead of allowing panels to overlap.
+   A typical 1000-CSS-pixel Retina window remains in the full three-column
+   layout. */
+:root.zai-reader-workspace-compact #zai-translation-column,
+:root.zai-reader-workspace-compact #zai-translation-column-splitter {
+  display: none !important;
+}
+
 #zai-column-splitter {
-  min-width: 4px;
-  width: 4px;
+  min-width: 6px;
+  width: 6px;
   background: linear-gradient(
     90deg,
     transparent 0,
@@ -66,6 +110,47 @@
 
 #zai-column-splitter:active {
   cursor: ew-resize;
+}
+
+#zai-translation-column {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  width: 380px;
+  min-width: 240px;
+  max-width: 620px;
+  overflow: hidden;
+  border-left: 1px solid var(--zai-border);
+  background: #fffdf9;
+  overscroll-behavior: contain;
+}
+
+#zai-translation-column-splitter {
+  width: 6px;
+  min-width: 6px;
+  background: linear-gradient(
+    90deg,
+    transparent 0,
+    transparent calc(50% - 1px),
+    var(--zai-border) calc(50% - 1px),
+    var(--zai-border) calc(50% + 1px),
+    transparent calc(50% + 1px),
+    transparent 100%
+  );
+  cursor: ew-resize;
+}
+
+#zai-translation-column-splitter:hover {
+  background: linear-gradient(
+    90deg,
+    transparent 0,
+    transparent calc(50% - 1px),
+    var(--zai-accent) calc(50% - 1px),
+    var(--zai-accent) calc(50% + 1px),
+    transparent calc(50% + 1px),
+    transparent 100%
+  );
 }
 
 #zai-column-splitter:hover {
@@ -123,25 +208,24 @@
   z-index: 2147483001;
 }
 
-:root.zai-docked-window.zai-docked-note-visible #zai-note-column {
+:root.zai-docked-window #zai-translation-column {
   position: fixed;
   inset-block: 0;
-  inset-inline-end: calc(var(--zai-docked-width) + 4px);
+  inset-inline-end: calc(var(--zai-docked-width) + 6px);
   z-index: 2147482998;
-  width: var(--zai-docked-note-width);
+  width: var(--zai-translation-width);
   height: auto;
-  border-left: 0;
 }
 
-:root.zai-docked-window.zai-docked-note-visible #zai-note-column-splitter {
+:root.zai-docked-window #zai-translation-column-splitter {
   position: fixed;
   inset-block: 0;
   inset-inline-end: calc(
-    var(--zai-docked-width) + 4px + var(--zai-docked-note-width)
+    var(--zai-docked-width) + 6px + var(--zai-translation-width)
   );
   z-index: 2147482999;
-  width: 4px;
-  min-width: 4px;
+  width: 6px;
+  min-width: 6px;
   background: linear-gradient(
     90deg,
     transparent 0,
@@ -154,24 +238,32 @@
 }
 
 #zai-note-column {
-  width: 560px;
-  min-width: 260px;
-  max-width: 700px;
-  border-left: 2px solid rgba(192, 103, 61, 0.55);
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  min-height: 180px;
+  max-height: calc(100% - 286px);
+  overflow: hidden;
+  border-bottom: 1px solid rgba(192, 103, 61, 0.55);
   background: var(--zai-panel-strong);
   overscroll-behavior: contain;
 }
 
 #zai-note-column-splitter {
-  min-width: 8px;
+  flex: 0 0 6px;
+  width: 100%;
+  min-width: 0;
+  height: 6px;
+  min-height: 6px;
   background: linear-gradient(
-    90deg,
+    180deg,
     transparent 0,
     rgba(192, 103, 61, 0.26) 45%,
     rgba(192, 103, 61, 0.5) 55%,
     transparent 100%
   );
-  cursor: ew-resize;
+  cursor: ns-resize;
 }
 
 .native-panel {
@@ -192,6 +284,142 @@
   font-size: 13px;
 }
 
+.zai-translation-root,
+.zai-translation-panel {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  color: var(--zai-text);
+  background: #fffdf9;
+  font-family: var(--zai-font);
+}
+
+.zai-translation-head {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 42px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--zai-border);
+  background: #fbf7f1;
+}
+
+.zai-translation-head-icon {
+  display: grid;
+  width: 27px;
+  height: 27px;
+  flex: 0 0 27px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--zai-accent-soft);
+  color: var(--zai-accent-strong);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.zai-translation-title {
+  margin: 0;
+  color: var(--zai-text);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.zai-translation-meta {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 30px;
+  padding: 5px 12px;
+  border-bottom: 1px solid rgba(231, 223, 210, 0.75);
+  color: var(--zai-muted);
+  font-size: 11px;
+}
+
+.zai-translation-status.is-streaming {
+  color: var(--zai-blue);
+}
+
+.zai-translation-status.is-error {
+  color: var(--zai-red);
+}
+
+.zai-translation-model {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--zai-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zai-translation-empty {
+  display: grid;
+  flex: 1 1 0;
+  min-height: 0;
+  padding: 28px;
+  place-items: center;
+  color: var(--zai-muted);
+  font-size: 15px;
+  line-height: 1.7;
+  text-align: center;
+}
+
+.zai-translation-body {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px 16px 28px;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.zai-translation-source,
+.zai-translation-result {
+  min-width: 0;
+}
+
+.zai-translation-result {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--zai-border);
+}
+
+.zai-translation-label {
+  margin: 0 0 7px;
+  color: var(--zai-muted);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.zai-translation-source-text {
+  color: var(--zai-muted);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.zai-translation-result-text {
+  color: var(--zai-text);
+  font-size: 22px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  -moz-user-select: text;
+  user-select: text;
+}
+
 .zai-note-window-head {
   display: flex;
   align-items: center;
@@ -199,6 +427,13 @@
   padding: 8px 10px;
   border-bottom: 1px solid var(--zai-border);
   background: rgba(255, 253, 248, 0.96);
+}
+
+/* The simplified workbench keeps note selection in the single toolbar button.
+   Hidden controls remain mounted so Zotero autosave and close flushing keep
+   their existing event wiring. */
+.zai-note-root.zai-note-simple .zai-note-window-head {
+  display: none;
 }
 
 :root.zai-docked-window .zai-note-window-head {
@@ -597,6 +832,113 @@
 .preset-switcher-bottom {
   justify-content: flex-start;
   overflow: visible;
+}
+
+.zai-selection-toolbar {
+  gap: 0;
+  padding: 7px 9px;
+}
+
+.zai-selection-toolbar .preset-switcher-bottom {
+  overflow: visible;
+}
+
+.zai-note-selector {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.zai-note-selector > summary {
+  display: inline-flex;
+  min-height: 31px;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 5px 13px;
+  border: 1px solid var(--zai-border-strong);
+  border-radius: 9px;
+  background: var(--zai-panel-strong);
+  color: var(--zai-text);
+  cursor: pointer;
+  font: 700 13px/1 var(--zai-font);
+  list-style: none;
+}
+
+.zai-note-selector > summary::-webkit-details-marker {
+  display: none;
+}
+
+.zai-note-selector > summary::after {
+  margin-left: 7px;
+  color: var(--zai-muted);
+  content: "⌄";
+  font-size: 10px;
+}
+
+.zai-note-selector[open] > summary,
+.zai-note-selector > summary:hover {
+  border-color: var(--zai-accent);
+  background: var(--zai-accent-soft);
+  color: var(--zai-accent-strong);
+}
+
+.zai-note-selector-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 220;
+  display: grid;
+  min-width: 220px;
+  max-width: min(320px, calc(100vw - 24px));
+  gap: 3px;
+  padding: 6px;
+  border: 1px solid var(--zai-border-strong);
+  border-radius: 10px;
+  background: var(--zai-panel-strong);
+  box-shadow: 0 12px 30px rgba(72, 50, 28, 0.2);
+}
+
+.zai-note-selector:not([open]) > .zai-note-selector-menu {
+  display: none;
+}
+
+.zai-note-selector-item {
+  width: 100%;
+  min-height: 32px;
+  overflow: hidden;
+  padding: 6px 9px;
+  border-color: transparent !important;
+  background: transparent !important;
+  color: var(--zai-text) !important;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zai-note-selector-item:hover,
+.zai-note-selector-item.is-active {
+  background: var(--zai-accent-soft) !important;
+  color: var(--zai-accent-strong) !important;
+}
+
+.zai-note-selector-separator {
+  height: 1px;
+  margin: 4px 2px;
+  background: var(--zai-border);
+}
+
+.zai-selection-toolbar .zai-note-close-button {
+  min-height: 31px;
+  padding: 5px 12px;
+  border: 1px solid rgba(192, 103, 61, 0.42);
+  border-radius: 9px;
+  background: rgba(255, 249, 244, 0.96);
+  color: var(--zai-accent-strong);
+  font: 700 13px/1 var(--zai-font);
+}
+
+.zai-selection-toolbar .zai-note-close-button:hover {
+  border-color: var(--zai-accent);
+  background: var(--zai-accent-soft);
 }
 
 .composer-preset-switcher {
@@ -1143,11 +1485,28 @@
   line-height: 1.45;
 }
 
-.zai-web-account-node-picker { display: grid; gap: 6px; min-width: 0; }
-.zai-web-account-node-settings { margin: 8px 0; }
-.zai-web-account-node-settings > summary { cursor: pointer; margin-bottom: 6px; }
-.zai-web-account-node-picker input { width: 100%; min-width: 0; box-sizing: border-box; }
-.zai-web-account-node-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.zai-web-account-node-picker {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.zai-web-account-node-settings {
+  margin: 8px 0;
+}
+.zai-web-account-node-settings > summary {
+  cursor: pointer;
+  margin-bottom: 6px;
+}
+.zai-web-account-node-picker input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.zai-web-account-node-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 
 .zai-web-account-download-actions {
   display: flex;
@@ -1362,8 +1721,6 @@
   border: 1px solid var(--zai-border);
   border-radius: 8px;
 }
-
-
 
 .header-layout-menu > summary {
   width: auto;
@@ -1675,8 +2032,6 @@
   font: 12px/1 var(--zai-font);
   white-space: nowrap;
 }
-
-
 
 .chat-language-control {
   display: flex;
@@ -2181,15 +2536,19 @@ button:disabled,
 
 .messages-empty {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
 .empty-signatures {
-  position: absolute;
-  top: 50%;
-  left: 50%;
+  position: relative;
+  top: auto;
+  left: auto;
   width: calc(100% - 32px);
   max-width: 520px;
-  transform: translate(-50%, -50%);
+  margin: auto;
+  transform: none;
 }
 
 .empty-signature-copy {
@@ -3783,7 +4142,8 @@ div.math-fallback {
 }
 
 .figure-menu-filters.paper-reference-tabs .figure-chip.figure-chip-active,
-.figure-menu-filters.paper-reference-tabs .figure-chip.figure-chip-active:hover {
+.figure-menu-filters.paper-reference-tabs
+  .figure-chip.figure-chip-active:hover {
   border-bottom-color: var(--zai-accent);
   background: transparent;
   color: var(--zai-accent-strong);
@@ -7120,8 +7480,12 @@ div.math-fallback {
   opacity: 0.58;
 }
 
-.zai-ft-run-error > summary { cursor: pointer; }
-.zai-ft-run-error > div { margin-top: 12px; }
+.zai-ft-run-error > summary {
+  cursor: pointer;
+}
+.zai-ft-run-error > div {
+  margin-top: 12px;
+}
 .zai-ft-error-response {
   max-height: 360px;
   overflow: auto;
@@ -8458,7 +8822,10 @@ div.math-fallback {
   box-shadow: none;
 }
 
-.is-interleaved.is-bilingual .zai-ft-algorithm-group > .zai-ft-block:first-child > .zai-ft-translation {
+.is-interleaved.is-bilingual
+  .zai-ft-algorithm-group
+  > .zai-ft-block:first-child
+  > .zai-ft-translation {
   border-top: 1px solid rgba(128, 105, 76, 0.24);
   padding-top: 12px;
 }
@@ -8629,7 +8996,10 @@ div.math-fallback {
   padding: 24px;
   background: rgba(24, 33, 27, 0.45);
 }
-.zai-ft-reference-overlay[hidden], .zai-ft-reference-back[hidden] { display: none; }
+.zai-ft-reference-overlay[hidden],
+.zai-ft-reference-back[hidden] {
+  display: none;
+}
 .zai-ft-reference-dialog {
   position: relative;
   width: min(880px, 100%);
@@ -8643,13 +9013,42 @@ div.math-fallback {
   color: #272d30;
   box-shadow: 0 15px 70px #0003;
 }
-.zai-ft-reference-dialog > h3 { margin: 0 90px 24px 0; }
-.zai-ft-reference-dialog > button { position: absolute; right: 24px; top: 24px; cursor: pointer; }
-.zai-ft-reference-body { font-size: 17px; line-height: 1.8; overflow-wrap: anywhere; }
-.zai-ft-reference-body small { display: block; margin-top: 20px; color: #718075; font-size: 12px; }
-.zai-ft-reference-body img { display: block; max-width: 100%; height: auto; margin: auto; }
-.zai-ft-reference-back { position: absolute; bottom: 20px; right: 24px; z-index: 20; cursor: pointer; }
-.zai-ft-assets img { cursor: zoom-in; }
+.zai-ft-reference-dialog > h3 {
+  margin: 0 90px 24px 0;
+}
+.zai-ft-reference-dialog > button {
+  position: absolute;
+  right: 24px;
+  top: 24px;
+  cursor: pointer;
+}
+.zai-ft-reference-body {
+  font-size: 17px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.zai-ft-reference-body small {
+  display: block;
+  margin-top: 20px;
+  color: #718075;
+  font-size: 12px;
+}
+.zai-ft-reference-body img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: auto;
+}
+.zai-ft-reference-back {
+  position: absolute;
+  bottom: 20px;
+  right: 24px;
+  z-index: 20;
+  cursor: pointer;
+}
+.zai-ft-assets img {
+  cursor: zoom-in;
+}
 
 /* Paper-like reading surface shared by both bilingual layouts. */
 .zai-ft-content {
@@ -8666,13 +9065,30 @@ div.math-fallback {
   background: transparent;
   background-image: none;
 }
-.zai-full-translation.is-parallel .zai-ft-source { border-right: 0; }
-.zai-full-translation.is-parallel .zai-ft-translation { border-left: 2px solid #b5cbb9; }
-.zai-full-translation.is-parallel .zai-ft-block { column-gap: 28px; }
-.zai-ft-block-body { font-size: var(--zai-ft-font-size, 18px); line-height: var(--zai-ft-line-height, 1.7); color: #272d30; }
-.zai-ft-translation .zai-ft-block-body { line-height: calc(var(--zai-ft-line-height, 1.7) * 1.15); color: #294434; }
-.zai-full-translation[data-ft-font-family="serif"] .zai-ft-content { font-family: Georgia, "Times New Roman", "Songti SC", "SimSun", serif; }
-.zai-full-translation[data-ft-font-family="sans"] .zai-ft-content { font-family: var(--zai-font); }
+.zai-full-translation.is-parallel .zai-ft-source {
+  border-right: 0;
+}
+.zai-full-translation.is-parallel .zai-ft-translation {
+  border-left: 2px solid #b5cbb9;
+}
+.zai-full-translation.is-parallel .zai-ft-block {
+  column-gap: 28px;
+}
+.zai-ft-block-body {
+  font-size: var(--zai-ft-font-size, 18px);
+  line-height: var(--zai-ft-line-height, 1.7);
+  color: #272d30;
+}
+.zai-ft-translation .zai-ft-block-body {
+  line-height: calc(var(--zai-ft-line-height, 1.7) * 1.15);
+  color: #294434;
+}
+.zai-full-translation[data-ft-font-family="serif"] .zai-ft-content {
+  font-family: Georgia, "Times New Roman", "Songti SC", "SimSun", serif;
+}
+.zai-full-translation[data-ft-font-family="sans"] .zai-ft-content {
+  font-family: var(--zai-font);
+}
 .zai-ft-content > .zai-ft-title {
   display: block;
   max-width: none;
@@ -8681,11 +9097,33 @@ div.math-fallback {
   border-bottom: 1px solid #e2e4de;
   text-align: center;
 }
-.zai-full-translation .zai-ft-title .zai-ft-cell { padding: 8px 0; border: 0; }
-.zai-ft-title .zai-ft-source .zai-ft-block-body { font-size: calc(var(--zai-ft-font-size, 18px) * 1.78); line-height: 1.3; font-weight: 700; max-width: 920px; margin: auto; }
-.zai-ft-title .zai-ft-translation .zai-ft-block-body { font-size: calc(var(--zai-ft-font-size, 18px) * 1.11); line-height: var(--zai-ft-line-height, 1.7); font-weight: 400; }
-.zai-ft-title-description { margin: 12px auto 0; max-width: 760px; font: 13px/1.8 var(--zai-font); text-align: left; color: #727975; }
-.zai-ft-title-description summary { text-align: center; cursor: pointer; }
+.zai-full-translation .zai-ft-title .zai-ft-cell {
+  padding: 8px 0;
+  border: 0;
+}
+.zai-ft-title .zai-ft-source .zai-ft-block-body {
+  font-size: calc(var(--zai-ft-font-size, 18px) * 1.78);
+  line-height: 1.3;
+  font-weight: 700;
+  max-width: 920px;
+  margin: auto;
+}
+.zai-ft-title .zai-ft-translation .zai-ft-block-body {
+  font-size: calc(var(--zai-ft-font-size, 18px) * 1.11);
+  line-height: var(--zai-ft-line-height, 1.7);
+  font-weight: 400;
+}
+.zai-ft-title-description {
+  margin: 12px auto 0;
+  max-width: 760px;
+  font: 13px/1.8 var(--zai-font);
+  text-align: left;
+  color: #727975;
+}
+.zai-ft-title-description summary {
+  text-align: center;
+  cursor: pointer;
+}
 .zai-ft-content > .zai-ft-metadata {
   display: block;
   margin: -18px 0 24px;
@@ -8697,27 +9135,74 @@ div.math-fallback {
   color: #666;
   overflow-wrap: anywhere;
 }
-.zai-ft-section-label { grid-column: 1 / -1; margin: 12px 0 18px; font: 700 23px/1.5 Georgia, serif; }
+.zai-ft-section-label {
+  grid-column: 1 / -1;
+  margin: 12px 0 18px;
+  font:
+    700 23px/1.5 Georgia,
+    serif;
+}
 .zai-ft-content > .zai-ft-list-lead,
-.zai-ft-content > .zai-ft-list-continues { margin-bottom: 4px; }
-.zai-ft-list-lead > .zai-ft-cell { padding-bottom: 4px; }
-.zai-ft-list-item > .zai-ft-cell { padding-top: 4px; padding-bottom: 4px; }
-.zai-ft-list-item .zai-ft-block-body > ul { margin: 0; padding-inline-start: 1.3em; }
-.zai-ft-list-item .zai-ft-block-body li { padding-inline-start: 0.2em; }
-.zai-ft-list-item .zai-ft-block-body li > p { margin: 0; }
-.zai-ft-footnote .zai-ft-block-body { font-size: 12px; color: #727975; }
-.zai-ft-heading .zai-ft-block-body { font-size: calc(var(--zai-ft-font-size, 18px) * 1.28); }
-.zai-ft-heading .zai-ft-translation .zai-ft-block-body { font-size: var(--zai-ft-font-size, 18px); }
-.zai-ft-shared-visual { background: transparent; border-bottom: 0; }
+.zai-ft-content > .zai-ft-list-continues {
+  margin-bottom: 4px;
+}
+.zai-ft-list-lead > .zai-ft-cell {
+  padding-bottom: 4px;
+}
+.zai-ft-list-item > .zai-ft-cell {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+.zai-ft-list-item .zai-ft-block-body > ul {
+  margin: 0;
+  padding-inline-start: 1.3em;
+}
+.zai-ft-list-item .zai-ft-block-body li {
+  padding-inline-start: 0.2em;
+}
+.zai-ft-list-item .zai-ft-block-body li > p {
+  margin: 0;
+}
+.zai-ft-footnote .zai-ft-block-body {
+  font-size: 12px;
+  color: #727975;
+}
+.zai-ft-heading .zai-ft-block-body {
+  font-size: calc(var(--zai-ft-font-size, 18px) * 1.28);
+}
+.zai-ft-heading .zai-ft-translation .zai-ft-block-body {
+  font-size: var(--zai-ft-font-size, 18px);
+}
+.zai-ft-shared-visual {
+  background: transparent;
+  border-bottom: 0;
+}
 .zai-ft-figure-caption .zai-ft-block-body,
-.zai-ft-table-caption .zai-ft-block-body { font-size: 14px; }
-.zai-ft-table-frame td p, .zai-ft-table-frame th p { margin: 0; }
-.zai-ft-table-frame th, .zai-ft-table-frame td { min-width: 0; padding: 7px 9px; }
+.zai-ft-table-caption .zai-ft-block-body {
+  font-size: 14px;
+}
+.zai-ft-table-frame td p,
+.zai-ft-table-frame th p {
+  margin: 0;
+}
+.zai-ft-table-frame th,
+.zai-ft-table-frame td {
+  min-width: 0;
+  padding: 7px 9px;
+}
 @media (max-width: 900px) {
-  .zai-ft-content { padding: 24px 16px 40px; }
-  .zai-full-translation.is-parallel .zai-ft-block { column-gap: 12px; }
-  .zai-ft-block-body { font-size: calc(var(--zai-ft-font-size, 18px) * 0.89); }
-  .zai-ft-title .zai-ft-source .zai-ft-block-body { font-size: calc(var(--zai-ft-font-size, 18px) * 1.44); }
+  .zai-ft-content {
+    padding: 24px 16px 40px;
+  }
+  .zai-full-translation.is-parallel .zai-ft-block {
+    column-gap: 12px;
+  }
+  .zai-ft-block-body {
+    font-size: calc(var(--zai-ft-font-size, 18px) * 0.89);
+  }
+  .zai-ft-title .zai-ft-source .zai-ft-block-body {
+    font-size: calc(var(--zai-ft-font-size, 18px) * 1.44);
+  }
 }
 
 .zai-ft-reference-body,
@@ -8736,7 +9221,9 @@ div.math-fallback {
   color: #294434;
   cursor: pointer;
 }
-.zai-ft-reference-body .zai-ft-reference-copy { cursor: pointer; }
+.zai-ft-reference-body .zai-ft-reference-copy {
+  cursor: pointer;
+}
 
 .zai-ft-backend {
   align-self: center;
@@ -8747,27 +9234,70 @@ div.math-fallback {
 }
 
 /* Browser selection is secondary to the one-click account action. */
-.composer-footer-actions:has(.composer-browser-picker) { overflow: visible; }
-.composer-web-account-group { display: inline-flex; align-items: center; gap: 0; }
-.composer-browser-picker { position: relative; font-size: 12px; }
-.composer-browser-picker > summary { cursor: pointer; padding: 5px 7px; list-style: none; }
-.composer-browser-menu {
-  position: absolute; bottom: 100%; right: 0; z-index: 100;
-  width: 240px; padding: 12px; display: flex; flex-direction: column; gap: 10px;
-  background: var(--zai-panel-strong); color: var(--zai-text);
-  border: 1px solid var(--zai-border); border-radius: 10px; box-shadow: 0 6px 20px #0002;
+.composer-footer-actions:has(.composer-browser-picker) {
+  overflow: visible;
 }
-.composer-browser-picker:not([open]) > .composer-browser-menu { display: none; }
-.zai-web-account-form .composer-browser-menu { position: static; width: auto; box-shadow: none; }
-.composer-browser-menu select { width: 100%; }
+.composer-web-account-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+}
+.composer-browser-picker {
+  position: relative;
+  font-size: 12px;
+}
+.composer-browser-picker > summary {
+  cursor: pointer;
+  padding: 5px 7px;
+  list-style: none;
+}
+.composer-browser-menu {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  z-index: 100;
+  width: 240px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--zai-panel-strong);
+  color: var(--zai-text);
+  border: 1px solid var(--zai-border);
+  border-radius: 10px;
+  box-shadow: 0 6px 20px #0002;
+}
+.composer-browser-picker:not([open]) > .composer-browser-menu {
+  display: none;
+}
+.zai-web-account-form .composer-browser-menu {
+  position: static;
+  width: auto;
+  box-shadow: none;
+}
+.composer-browser-menu select {
+  width: 100%;
+}
 
-.composer-browser-menu input { box-sizing: border-box; width: 100%; margin-top: 5px; }
+.composer-browser-menu input {
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 5px;
+}
 
-.composer-browser-file-actions { display: flex; gap: 6px; }
-.composer-browser-file-actions button { flex: 1; white-space: nowrap; }
+.composer-browser-file-actions {
+  display: flex;
+  gap: 6px;
+}
+.composer-browser-file-actions button {
+  flex: 1;
+  white-space: nowrap;
+}
 
 /* Ordinary PDF source verification, isolated from the LaTeX reader. */
-.zai-pdf-source-pane[hidden] { display: none; }
+.zai-pdf-source-pane[hidden] {
+  display: none;
+}
 .zai-pdf-source-pane {
   display: flex;
   flex-direction: column;
@@ -8777,9 +9307,15 @@ div.math-fallback {
   border-right: 1px solid var(--zai-border);
   background: #f4f4f4;
 }
-.is-pdf-compare .zai-ft-outline { display: none; }
-.is-pdf-compare .zai-ft-content { padding: 24px 20px 40px; }
-.is-pdf-compare.is-parallel .zai-ft-block { grid-template-columns: minmax(0, 1fr); }
+.is-pdf-compare .zai-ft-outline {
+  display: none;
+}
+.is-pdf-compare .zai-ft-content {
+  padding: 24px 20px 40px;
+}
+.is-pdf-compare.is-parallel .zai-ft-block {
+  grid-template-columns: minmax(0, 1fr);
+}
 .zai-pdf-source-controls {
   display: flex;
   align-items: center;
@@ -8789,9 +9325,22 @@ div.math-fallback {
   padding: 8px;
   background: var(--zai-bg, white);
 }
-.zai-pdf-source-body { flex: 1; min-height: 0; overflow: auto; padding: 12px; }
-.zai-pdf-source-page { position: relative; margin: 0 auto; line-height: 0; }
-.zai-pdf-source-page > img { display: block; width: 100%; height: auto; }
+.zai-pdf-source-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+}
+.zai-pdf-source-page {
+  position: relative;
+  margin: 0 auto;
+  line-height: 0;
+}
+.zai-pdf-source-page > img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
 .zai-pdf-source-page > .zai-pdf-source-box {
   position: absolute;
   box-sizing: border-box;
@@ -8804,11 +9353,15 @@ div.math-fallback {
   background: transparent;
   cursor: pointer;
 }
-.zai-pdf-source-page > .zai-pdf-source-box:is(:hover, :focus-visible, .is-selected) {
+.zai-pdf-source-page
+  > .zai-pdf-source-box:is(:hover, :focus-visible, .is-selected) {
   background: rgba(64, 111, 230, 0.16);
   border: 2px solid #315ce0;
 }
-.zai-ft-block.is-pdf-source-selected { outline: 1px solid #597ee4; outline-offset: 3px; }
+.zai-ft-block.is-pdf-source-selected {
+  outline: 1px solid #597ee4;
+  outline-offset: 3px;
+}
 .zai-pdf-source-trigger {
   position: static;
   display: block;
@@ -8819,7 +9372,10 @@ div.math-fallback {
   opacity: 0;
   pointer-events: none;
 }
-.zai-ft-block:is(:hover, :focus-within) > .zai-pdf-source-trigger { opacity: 1; pointer-events: auto; }
+.zai-ft-block:is(:hover, :focus-within) > .zai-pdf-source-trigger {
+  opacity: 1;
+  pointer-events: auto;
+}
 .zai-pdf-source-inline {
   grid-column: 1 / -1;
   padding: 12px;
@@ -8830,10 +9386,25 @@ div.math-fallback {
   color: #253653;
   font: 13px/1.6 sans-serif;
 }
-.zai-pdf-source-inline > button { margin-bottom: 8px; }
-.zai-pdf-source-crop { position: relative; width: 100%; overflow: hidden; background: white; }
-.zai-pdf-source-crop > img { position: absolute; max-width: none; height: auto; display: block; }
-.zai-ft-pdf-toggle[aria-pressed="true"] { color: #315ce0; border-color: #597ee4; }
+.zai-pdf-source-inline > button {
+  margin-bottom: 8px;
+}
+.zai-pdf-source-crop {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: white;
+}
+.zai-pdf-source-crop > img {
+  position: absolute;
+  max-width: none;
+  height: auto;
+  display: block;
+}
+.zai-ft-pdf-toggle[aria-pressed="true"] {
+  color: #315ce0;
+  border-color: #597ee4;
+}
 
 .zai-web-notice-layer {
   position: fixed;
@@ -9278,7 +9849,6 @@ div.math-fallback {
   user-select: none !important;
 }
 
-
 /* A desktop chrome window uses the OS title bar and window edges. */
 #zai-root.zai-root-desktop-floating .zai-floating-window {
   inset: 0 !important;
@@ -9330,7 +9900,6 @@ div.math-fallback {
   font-size: 11px;
 }
 
-
 /* One anchored popover for reading layout and chat appearance. */
 .header-view-menu .zai-compact-menu-content {
   box-sizing: border-box;
@@ -9379,8 +9948,12 @@ div.math-fallback {
 }
 
 /* Disable the parent toolbar drag region for the entire lifetime of View. */
-:root.zai-docked-window.zai-view-menu-open .zai-root-docked .preset-switcher-top,
-:root.zai-docked-window.zai-view-menu-open .zai-root-docked .preset-switcher-bottom {
+:root.zai-docked-window.zai-view-menu-open
+  .zai-root-docked
+  .preset-switcher-top,
+:root.zai-docked-window.zai-view-menu-open
+  .zai-root-docked
+  .preset-switcher-bottom {
   -moz-window-dragging: no-drag !important;
 }
 
@@ -9388,4 +9961,249 @@ div.math-fallback {
   max-height: 210px;
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+
+/* Selection-only reading workspace: keep the conversation as quiet as a
+   messaging app. These rules are deliberately scoped so the full assistant
+   retains its richer cards, metadata and toolbar treatment. */
+.zai-selection-only {
+  background: #fffdf9;
+}
+
+.zai-selection-only .messages,
+.zai-selection-only .composer {
+  background: #fffdf9;
+}
+
+.zai-selection-only .messages {
+  padding: 14px 12px 10px;
+}
+
+.zai-selection-only .composer {
+  padding: 7px 12px 12px;
+  border-top: 0;
+}
+
+.zai-selection-only .bubble-head,
+.zai-selection-only .bubble-source-selection,
+.zai-selection-only .bubble-thinking,
+.zai-selection-only .bubble-usage,
+.zai-selection-only .bubble-actions {
+  display: none;
+}
+
+.zai-selection-only .bubble {
+  box-sizing: border-box;
+  width: fit-content;
+  max-width: 86%;
+  margin-bottom: 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--zai-border);
+  box-shadow: none;
+  overflow-wrap: anywhere;
+}
+
+.zai-selection-only .bubble-user {
+  margin-left: auto;
+  border-radius: 9px 3px 9px 9px;
+  border-color: var(--zai-border-strong);
+  background: var(--zai-accent-soft);
+  color: var(--zai-text);
+}
+
+.zai-selection-only .bubble-assistant {
+  margin-right: auto;
+  border-radius: 3px 9px 9px 9px;
+  background: var(--zai-panel-strong);
+}
+
+.zai-selection-only .bubble-body,
+.zai-selection-only .bubble-body p:last-child {
+  margin-bottom: 0;
+}
+
+.zai-selection-only .input-row,
+.zai-selection-only .input-row:focus-within {
+  border: 1px solid var(--zai-border);
+  border-radius: 9px;
+  background: var(--zai-panel-strong);
+  box-shadow: none;
+}
+
+.zai-selection-only .input-row textarea {
+  color: var(--zai-text);
+}
+
+/* Per-message model and reasoning choices live immediately above the input,
+   without bringing the full composer's API/WEB and agent controls back. */
+.zai-selection-only .zai-selection-composer-footer,
+.zai-selection-only .zai-selection-chat-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-width: 0;
+  padding: 0 2px 7px;
+  border: 0;
+  background: transparent;
+  color: var(--zai-muted);
+  font: 600 11px/1.35 var(--zai-font);
+}
+
+.zai-selection-only .zai-selection-composer-footer .model-switcher,
+.zai-selection-only .zai-selection-chat-controls .model-switcher {
+  flex: 1 1 120px;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+
+.zai-selection-only .zai-selection-model-control,
+.zai-selection-only .zai-selection-reasoning-control {
+  display: flex;
+  flex: 1 1 120px;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.zai-selection-only .zai-selection-composer-footer .model-switcher-trigger,
+.zai-selection-only .zai-selection-chat-controls .model-switcher-trigger,
+.zai-selection-only .zai-selection-composer-footer .model-switcher-label,
+.zai-selection-only .zai-selection-chat-controls .model-switcher-label,
+.zai-selection-only .zai-selection-composer-footer .composer-reasoning select,
+.zai-selection-only .zai-selection-chat-controls .composer-reasoning select {
+  max-width: 150px;
+  border-color: var(--zai-border);
+  background: var(--zai-panel-strong);
+  color: var(--zai-text);
+}
+
+.zai-selection-only .zai-selection-composer-footer .composer-reasoning,
+.zai-selection-only .zai-selection-chat-controls .composer-reasoning {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  color: var(--zai-muted);
+  font-size: 11px;
+}
+
+.zai-selection-only .zai-selection-composer-footer .model-switcher-trigger,
+.zai-selection-only .zai-selection-chat-controls .model-switcher-trigger,
+.zai-selection-only .zai-selection-composer-footer .model-switcher-label,
+.zai-selection-only .zai-selection-chat-controls .model-switcher-label,
+.zai-selection-only .zai-selection-composer-footer .composer-reasoning select,
+.zai-selection-only .zai-selection-chat-controls .composer-reasoning select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Logged-out state. It replaces the chat instead of stacking a form on top
+   of it, so a first launch has one obvious action and no model-ID field. */
+.zai-selection-only .zai-login-gate {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-self: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: min(100%, 420px);
+  min-height: 0;
+  padding: 28px 22px;
+  color: var(--zai-text);
+}
+
+.zai-selection-only .zai-login-mark {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  margin-bottom: 14px;
+  border: 1px solid var(--zai-border-strong);
+  border-radius: 12px;
+  background: var(--zai-accent-soft);
+  color: var(--zai-accent-strong);
+  font: 800 16px/1 var(--zai-font);
+}
+
+.zai-selection-only .zai-login-title {
+  margin: 0 0 8px;
+  font: 750 20px/1.35 var(--zai-font);
+}
+
+.zai-selection-only .zai-login-intro {
+  margin: 0 0 20px;
+  color: var(--zai-muted);
+  font: 13px/1.55 var(--zai-font);
+}
+
+.zai-selection-only .zai-login-field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+  color: var(--zai-muted);
+  font: 650 12px/1.35 var(--zai-font);
+}
+
+.zai-selection-only .zai-login-field input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid var(--zai-border);
+  border-radius: 8px;
+  background: var(--zai-panel-strong);
+  color: var(--zai-text);
+  font: 13px/1.4 var(--zai-font);
+}
+
+.zai-selection-only .zai-login-field input:focus {
+  border-color: var(--zai-accent);
+  box-shadow: 0 0 0 2px rgba(192, 103, 61, 0.14);
+  outline: none;
+}
+
+.zai-selection-only .zai-login-submit {
+  min-height: 38px;
+  margin-top: 4px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--zai-accent);
+  color: #fff;
+  cursor: pointer;
+  font: 700 13px/1 var(--zai-font);
+}
+
+.zai-selection-only .zai-login-submit:hover:not(:disabled) {
+  background: var(--zai-accent-strong);
+}
+
+.zai-selection-only .zai-login-submit:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.zai-selection-only .zai-login-status {
+  min-height: 18px;
+  margin-top: 10px;
+  color: var(--zai-muted);
+  font: 12px/1.5 var(--zai-font);
+}
+
+.zai-selection-only .zai-login-status.is-error {
+  color: #c62828;
+}
+
+.zai-selection-only .zai-login-storage-note {
+  margin-top: 6px;
+  color: var(--zai-faint);
+  font: 11px/1.5 var(--zai-font);
+}
+
+.zai-selection-only .zai-login-logout {
+  margin-left: auto;
 }

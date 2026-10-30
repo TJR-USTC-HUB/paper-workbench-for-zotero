@@ -1,4 +1,8 @@
-import { beforeEach as localeBeforeEach, afterEach as localeAfterEach, vi as localeVi } from "vitest";
+import {
+  beforeEach as localeBeforeEach,
+  afterEach as localeAfterEach,
+  vi as localeVi,
+} from "vitest";
 import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { zipSync } from "fflate";
@@ -330,8 +334,8 @@ describe("Web Agent installation", () => {
     const release = {
       protocolVersion: 26,
       assetName: "zai-web-agent-runtime.zip",
-      downloadUrl: `https://github.com/xuhan-rgb/zotero-ai-sidebar/releases/download/v${addonVersion}/zai-web-agent-runtime.zip`,
-      releaseUrl: `https://github.com/xuhan-rgb/zotero-ai-sidebar/releases/tag/v${addonVersion}`,
+      downloadUrl: `https://github.com/TJR-USTC-HUB/paper-workbench-for-zotero/releases/download/v${addonVersion}/zai-web-agent-runtime.zip`,
+      releaseUrl: `https://github.com/TJR-USTC-HUB/paper-workbench-for-zotero/releases/tag/v${addonVersion}`,
       sha256: createHash("sha256").update(runtimeArchive).digest("hex"),
       size: runtimeArchive.byteLength,
     };

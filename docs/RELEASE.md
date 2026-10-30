@@ -15,7 +15,7 @@ If you choose another repository, update `package.json` first so the package met
 Push the main branch once:
 
 ```bash
-git push -u origin master
+git push -u origin main
 ```
 
 ## Normal release
@@ -73,7 +73,7 @@ When the tag reaches GitHub, `.github/workflows/release.yml` automatically runs:
 - `npm ci`
 - `npm test`
 - `npm run build`
-- uploads `.scaffold/build/zotero-ai-sidebar.xpi` and `.scaffold/build/zai-web-agent-runtime.zip` to the version release
+- uploads `.scaffold/build/paper-workbench-for-zotero.xpi` and `.scaffold/build/zai-web-agent-runtime.zip` to the version release
 - publishes `update.json` / `update-beta.json` to the fixed `release` Release (auto-update)
 
 ## Manual release from GitHub UI

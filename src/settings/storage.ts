@@ -1,4 +1,4 @@
-import { isReasoningEffort } from './reasoning';
+import { isReasoningEffort } from "./reasoning";
 import {
   DEFAULT_BASE_URLS,
   DEFAULT_MODELS,
@@ -10,7 +10,7 @@ import {
   type ModelSuggestionGroup,
   type ProviderKind,
   type ReasoningSummary,
-} from './types';
+} from "./types";
 
 // Model-preset persistence backed by Zotero's preferences API.
 //
@@ -30,8 +30,9 @@ export interface PrefsStore {
   clear?(key: string): void;
 }
 
-const KEY = 'extensions.zotero-ai-sidebar.presets';
-const SELECTED_PRESET_KEY = 'extensions.zotero-ai-sidebar.selectedPresetID';
+const KEY = "extensions.zotero-ai-sidebar.presets";
+const SELECTED_PRESET_KEY = "extensions.zotero-ai-sidebar.selectedPresetID";
+const SIDEBAR_AUTH_KEY = "extensions.zotero-ai-sidebar.sidebarAuthenticated";
 
 export function loadSelectedPresetID(prefs: PrefsStore): string | null {
   return prefs.get(SELECTED_PRESET_KEY) || null;
@@ -39,6 +40,22 @@ export function loadSelectedPresetID(prefs: PrefsStore): string | null {
 
 export function saveSelectedPresetID(prefs: PrefsStore, id: string): void {
   prefs.set(SELECTED_PRESET_KEY, id);
+}
+
+export function clearSelectedPresetID(prefs: PrefsStore): void {
+  if (prefs.clear) prefs.clear(SELECTED_PRESET_KEY);
+  else prefs.set(SELECTED_PRESET_KEY, "");
+}
+
+export function loadSidebarAuth(prefs: PrefsStore): boolean {
+  return prefs.get(SIDEBAR_AUTH_KEY) === "true";
+}
+
+export function saveSidebarAuth(
+  prefs: PrefsStore,
+  authenticated: boolean,
+): void {
+  prefs.set(SIDEBAR_AUTH_KEY, authenticated ? "true" : "false");
 }
 
 export function loadPresets(prefs: PrefsStore): ModelPreset[] {
@@ -64,14 +81,26 @@ export function normalizePresetList(value: unknown): ModelPreset[] {
 export function zoteroPrefs(): PrefsStore {
   return {
     get: (k) => {
-      const v = (Zotero as unknown as { Prefs: { get: (k: string, global: boolean) => unknown } }).Prefs.get(k, true);
-      return typeof v === 'string' ? v : undefined;
+      const v = (
+        Zotero as unknown as {
+          Prefs: { get: (k: string, global: boolean) => unknown };
+        }
+      ).Prefs.get(k, true);
+      return typeof v === "string" ? v : undefined;
     },
     set: (k, v) => {
-      (Zotero as unknown as { Prefs: { set: (k: string, v: string, global: boolean) => void } }).Prefs.set(k, v, true);
+      (
+        Zotero as unknown as {
+          Prefs: { set: (k: string, v: string, global: boolean) => void };
+        }
+      ).Prefs.set(k, v, true);
     },
     clear: (k) => {
-      (Zotero as unknown as { Prefs: { clear: (k: string, global: boolean) => void } }).Prefs.clear(k, true);
+      (
+        Zotero as unknown as {
+          Prefs: { clear: (k: string, global: boolean) => void };
+        }
+      ).Prefs.clear(k, true);
     },
   };
 }
@@ -83,17 +112,24 @@ export function zoteroPrefs(): PrefsStore {
 // GOTCHA: `id` defaults to `preset-${Date.now()}` rather than a UUID; this
 // fallback is only hit on legacy entries that pre-date `crypto.randomUUID()`.
 function normalizePreset(value: unknown): ModelPreset | null {
-  if (!value || typeof value !== 'object') return null;
+  if (!value || typeof value !== "object") return null;
   const preset = value as Partial<ModelPreset>;
-  if (preset.provider !== 'openai' && preset.provider !== 'anthropic') return null;
+  if (preset.provider !== "openai" && preset.provider !== "anthropic")
+    return null;
   const provider = preset.provider as ProviderKind;
-  const { model, models } = normalizeModels(provider, preset.model, preset.models);
+  const { model, models } = normalizeModels(
+    provider,
+    preset.model,
+    preset.models,
+  );
   const baseUrl = String(preset.baseUrl || DEFAULT_BASE_URLS[provider]);
   return {
     id: String(preset.id || `preset-${Date.now()}`),
-    label: String(preset.label || (provider === 'anthropic' ? 'Claude' : 'GPT')),
+    label: String(
+      preset.label || (provider === "anthropic" ? "Claude" : "GPT"),
+    ),
     provider,
-    apiKey: String(preset.apiKey || ''),
+    apiKey: String(preset.apiKey || ""),
     baseUrl,
     model,
     models,
@@ -118,10 +154,10 @@ function normalizeModels(
 ): { model: string; models: string[] } {
   const fromList = Array.isArray(rawModels)
     ? rawModels
-        .map((entry) => (typeof entry === 'string' ? entry.trim() : ''))
+        .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
         .filter((entry) => entry.length > 0)
     : [];
-  const trimmedActive = typeof rawModel === 'string' ? rawModel.trim() : '';
+  const trimmedActive = typeof rawModel === "string" ? rawModel.trim() : "";
   const active =
     trimmedActive ||
     (fromList.length > 0 ? fromList[0] : DEFAULT_MODELS[provider]);
@@ -130,7 +166,9 @@ function normalizeModels(
   // editor survives a save/load round-trip.
   const seen = new Set<string>();
   const ordered: string[] = [];
-  const sourceOrder = fromList.includes(active) ? fromList : [active, ...fromList];
+  const sourceOrder = fromList.includes(active)
+    ? fromList
+    : [active, ...fromList];
   for (const entry of sourceOrder) {
     if (!entry || seen.has(entry)) continue;
     seen.add(entry);
@@ -145,17 +183,21 @@ function normalizeModels(
 // presets may persist a UI-only model suggestion group separately.
 function normalizeExtras(
   provider: ProviderKind,
-  extras: ModelPreset['extras'],
+  extras: ModelPreset["extras"],
   baseUrl: string,
   model: string,
-): ModelPreset['extras'] {
+): ModelPreset["extras"] {
   const rawChoices = extras?.reasoningEffortByModel;
   if (rawChoices !== undefined) {
-    const choices = rawChoices && typeof rawChoices === 'object' && !Array.isArray(rawChoices)
-      ? Object.entries(rawChoices).filter(([, value]) => isReasoningEffort(value)) : [];
+    const choices =
+      rawChoices && typeof rawChoices === "object" && !Array.isArray(rawChoices)
+        ? Object.entries(rawChoices).filter(([, value]) =>
+            isReasoningEffort(value),
+          )
+        : [];
     extras = { ...extras, reasoningEffortByModel: Object.fromEntries(choices) };
   }
-  if (provider === 'anthropic') {
+  if (provider === "anthropic") {
     const vendor = isAnthropicVendor(extras?.vendor)
       ? extras.vendor
       : detectAnthropicVendor(baseUrl, model);
@@ -183,17 +225,17 @@ function normalizeExtras(
       : DEFAULT_REASONING_SUMMARY,
     agentPermissionMode: isAgentPermissionMode(extras?.agentPermissionMode)
       ? extras.agentPermissionMode
-      : 'default',
+      : "default",
   };
 }
 
 function isModelSuggestionGroup(value: unknown): value is ModelSuggestionGroup {
   return (
-    value === 'auto' ||
-    value === 'openai' ||
-    value === 'deepseek' ||
-    value === 'claude' ||
-    value === 'custom'
+    value === "auto" ||
+    value === "openai" ||
+    value === "deepseek" ||
+    value === "claude" ||
+    value === "custom"
   );
 }
 
@@ -206,24 +248,24 @@ export function detectAnthropicVendor(
 ): AnthropicVendor {
   const url = baseUrl.toLowerCase();
   const id = model.toLowerCase();
-  if (url.includes('deepseek') || id.startsWith('deepseek')) return 'deepseek';
-  if (url.includes('anthropic.com') || id.startsWith('claude')) return 'claude';
-  return 'compat';
+  if (url.includes("deepseek") || id.startsWith("deepseek")) return "deepseek";
+  if (url.includes("anthropic.com") || id.startsWith("claude")) return "claude";
+  return "compat";
 }
 
 function isAnthropicVendor(value: unknown): value is AnthropicVendor {
-  return value === 'claude' || value === 'deepseek' || value === 'compat';
+  return value === "claude" || value === "deepseek" || value === "compat";
 }
 
 function isReasoningSummary(value: unknown): value is ReasoningSummary {
   return (
-    value === 'auto' ||
-    value === 'concise' ||
-    value === 'detailed' ||
-    value === 'none'
+    value === "auto" ||
+    value === "concise" ||
+    value === "detailed" ||
+    value === "none"
   );
 }
 
 function isAgentPermissionMode(value: unknown): value is AgentPermissionMode {
-  return value === 'default' || value === 'yolo';
+  return value === "default" || value === "yolo";
 }

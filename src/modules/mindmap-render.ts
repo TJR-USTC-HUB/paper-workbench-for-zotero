@@ -202,7 +202,7 @@ export function renderMindmapSvg(
 
   dagreLayout(g);
 
-  const gi = g.graph();
+  const gi = g.graph() as { width?: number; height?: number };
   const svgW = (gi.width ?? 400) + 56;
   const svgH = (gi.height ?? 300) + 56;
 
@@ -229,8 +229,13 @@ export function renderMindmapSvg(
   const edgeGroup = doc.createElementNS(SVG_NS, "g");
   edgeGroup.setAttribute("class", "zai-mm-edges");
   for (const e of g.edges()) {
-    const ei = g.edge(e);
-    const pts = ei.points as Array<{ x: number; y: number }>;
+    const ei = g.edge(e) as {
+      points?: Array<{ x: number; y: number }>;
+      label?: unknown;
+      x?: number;
+      y?: number;
+    };
+    const pts = ei.points ?? [];
     if (!pts || pts.length < 2) continue;
     const d = bezierPath(pts);
     if (!d) continue;
@@ -268,7 +273,12 @@ export function renderMindmapSvg(
   const nodeGroup = doc.createElementNS(SVG_NS, "g");
   nodeGroup.setAttribute("class", "zai-mm-nodes");
   for (const id of g.nodes()) {
-    const nd = g.node(id);
+    const nd = g.node(id) as {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    };
     const orig = nodeMap.get(id);
     const type = orig?.type ?? "point";
     const r = nodeRadius(type);
@@ -553,11 +563,7 @@ function enablePanZoom(
       // A trackpad emits many small delta values. Scaling continuously avoids
       // treating every tiny movement as a full 15% zoom step.
       const deltaUnit =
-        e.deltaMode === 1
-          ? 40
-          : e.deltaMode === 2
-            ? rect.height
-            : 1;
+        e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? rect.height : 1;
       const normalizedDelta = e.deltaY * deltaUnit;
       const boundedDelta = Math.max(-240, Math.min(240, normalizedDelta));
       const factor = Math.exp(boundedDelta * 0.0015);

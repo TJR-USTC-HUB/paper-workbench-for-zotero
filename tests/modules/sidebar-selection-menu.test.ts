@@ -36,8 +36,12 @@ describe("sidebar selected-text menu", () => {
   });
 
   it("offers note insertion and a cited question", () => {
-    expect(sidebarSource).toContain('importBtn.textContent = uiText("加入笔记", "Add to note")');
-    expect(sidebarSource).toContain('askBtn.textContent = uiText("提问", "Ask")');
+    expect(sidebarSource).toContain(
+      'importBtn.textContent = uiText("加入笔记", "Add to note")',
+    );
+    expect(sidebarSource).toContain(
+      'askBtn.textContent = uiText("提问", "Ask")',
+    );
     expect(sidebarSource).toContain("fullReply: sourceMessage.content");
     expect(sidebarSource).toContain("excerpt,");
     expect(sidebarSource).toContain("sourceAssistantOrdinal:");
@@ -95,8 +99,12 @@ describe("sidebar selected-text menu", () => {
   });
 
   it("labels WEB context, reasoning, and citation source without a redundant answer label", () => {
-    expect(sidebarSource).toMatch(/webContext\s*\? uiText\("发送上下文", "Sent context"\)/);
-    expect(sidebarSource).toContain('webProvider === "deepseek" ? uiText("DeepSeek 已思考", "DeepSeek reasoning")');
+    expect(sidebarSource).toMatch(
+      /webContext\s*\? uiText\("发送上下文", "Sent context"\)/,
+    );
+    expect(sidebarSource).toMatch(
+      /webProvider\s*===\s*"deepseek"\s*\?\s*uiText\(\s*"DeepSeek 已思考",\s*"DeepSeek reasoning"\s*\)/s,
+    );
     expect(sidebarSource).not.toContain('"bubble-answer-label"');
     expect(sidebarSource).toContain("sourceAssistantOrdinal");
     expect(sidebarSource).toContain("sourceQuestionPreview");
@@ -106,7 +114,9 @@ describe("sidebar selected-text menu", () => {
 
   it("isolates a cited-reply question from configured chat history", () => {
     expect(sidebarSource).toContain("const isolatedHistory =");
-    expect(sidebarSource).toContain("options.isolatedHistory ? [] : history");
+    expect(sidebarSource).toContain(
+      "options.isolatedHistory || selectionOnly ? [] : history",
+    );
     expect(sidebarSource).toContain(
       'userMessage.context?.selectedTextOrigin === "chat"',
     );

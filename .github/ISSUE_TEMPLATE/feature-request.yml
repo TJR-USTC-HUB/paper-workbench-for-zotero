@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |-
-        需要英文？请使用[英文表单](https://github.com/xuhan-rgb/zotero-ai-sidebar/issues/new?template=feature-request-en.yml)。
+        需要英文？请使用[英文表单](https://github.com/TJR-USTC-HUB/paper-workbench-for-zotero/issues/new?template=feature-request-en.yml)。
 
         请先说明**你要解决的问题**，再说你希望的方案——这样更容易判断该不该做、怎么做。
   - type: checkboxes

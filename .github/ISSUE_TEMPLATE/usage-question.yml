@@ -7,9 +7,9 @@ body:
   - type: markdown
     attributes:
       value: |-
-        需要英文？请使用[英文表单](https://github.com/xuhan-rgb/zotero-ai-sidebar/issues/new?template=usage-question-en.yml)。
+        需要英文？请使用[英文表单](https://github.com/TJR-USTC-HUB/paper-workbench-for-zotero/issues/new?template=usage-question-en.yml)。
 
-        提问前请先看 [使用教程](https://github.com/xuhan-rgb/zotero-ai-sidebar/blob/master/docs/USAGE.zh-CN.md) 的「故障排查」，以及侧边栏里的「使用须知」。
+        提问前请先看 [使用教程](https://github.com/TJR-USTC-HUB/paper-workbench-for-zotero/blob/main/docs/USAGE.zh-CN.md) 的「故障排查」，以及侧边栏里的「使用须知」。
   - type: checkboxes
     id: preflight
     attributes:

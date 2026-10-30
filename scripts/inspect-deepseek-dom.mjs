@@ -1,22 +1,53 @@
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { chromium } from "../web-agent/node_modules/playwright-core/index.mjs";
+import {
+  resolveBrowserExecutable,
+  resolveBrowserProfile,
+} from "./dev-browser-paths.mjs";
+
+if (process.argv.includes("--help")) {
+  process.stdout.write(
+    [
+      "Usage: node scripts/inspect-deepseek-dom.mjs [options]",
+      "",
+      "Options:",
+      "  --home                       Inspect the DeepSeek home page only",
+      "  --mode=fast|expert|vision    Select a chat mode before inspection",
+      "  --conversation=<title>       Open a conversation by its exact title",
+      "",
+      "Environment:",
+      "  PAPER_WORKBENCH_BROWSER_PATH     Chromium-based browser executable",
+      "  PAPER_WORKBENCH_BROWSER_PROFILE  Persistent developer browser profile",
+      "  DEEPSEEK_CONVERSATION_TITLE      Conversation title (argument wins)",
+      "",
+    ].join("\n"),
+  );
+  process.exit(0);
+}
 
 const homeOnly = process.argv.includes("--home");
 const requestedMode = process.argv
   .find((argument) => argument.startsWith("--mode="))
   ?.slice("--mode=".length);
+const requestedConversation =
+  process.argv
+    .find((argument) => argument.startsWith("--conversation="))
+    ?.slice("--conversation=".length)
+    .trim() || process.env.DEEPSEEK_CONVERSATION_TITLE?.trim();
 
 const context = await chromium.launchPersistentContext(
-  "/home/qwer/.local/share/zotero-ai-sidebar/browser-profile",
+  resolveBrowserProfile(),
   {
-    executablePath: "/usr/bin/google-chrome",
+    executablePath: resolveBrowserExecutable(),
     headless: false,
     viewport: { width: 1500, height: 1000 },
   },
 );
 
-let page = context.pages().find((candidate) =>
-  candidate.url().includes("chat.deepseek.com"),
-);
+let page = context
+  .pages()
+  .find((candidate) => candidate.url().includes("chat.deepseek.com"));
 if (!page) {
   page = context.pages()[0] ?? (await context.newPage());
   await page.goto("https://chat.deepseek.com/", {
@@ -44,8 +75,14 @@ if (requestedMode) {
   await page.waitForTimeout(2_000);
 }
 
-if (!homeOnly && (await page.locator(".ds-markdown").count()) === 0) {
-  const conversation = page.getByText("LAW论文整理", { exact: true }).first();
+if (
+  !homeOnly &&
+  requestedConversation &&
+  (await page.locator(".ds-markdown").count()) === 0
+) {
+  const conversation = page
+    .getByText(requestedConversation, { exact: true })
+    .first();
   if ((await conversation.count()) > 0) {
     await conversation.click();
     await page.waitForTimeout(5_000);
@@ -61,14 +98,19 @@ const result = [];
 for (let index = start; index < count; index += 1) {
   result.push(
     await nodes.nth(index).evaluate((root, nodeIndex) => {
-      const clean = (value) => String(value || "").replace(/\s+/g, " ").trim();
+      const clean = (value) =>
+        String(value || "")
+          .replace(/\s+/g, " ")
+          .trim();
       const describe = (element) => ({
         tag: element.tagName.toLowerCase(),
         class: element.getAttribute("class") || "",
         role: element.getAttribute("role") || "",
         ariaExpanded: element.getAttribute("aria-expanded") || "",
         text: clean(element.textContent).slice(0, 180),
-        controls: [...element.querySelectorAll("button, summary, [role='button']")]
+        controls: [
+          ...element.querySelectorAll("button, summary, [role='button']"),
+        ]
           .map((control) => clean(control.textContent))
           .filter(Boolean)
           .slice(0, 8),
@@ -96,19 +138,25 @@ for (let index = start; index < count; index += 1) {
 }
 
 const messageTree = (await page.locator(".ds-message").count())
-  ? await page.locator(".ds-message").last().evaluate((root) => {
-  const clean = (value) => String(value || "").replace(/\s+/g, " ").trim();
-  const walk = (element, depth = 0) => ({
-    tag: element.tagName.toLowerCase(),
-    class: element.getAttribute("class") || "",
-    text: clean(element.textContent).slice(0, 160),
-    children:
-      depth >= 5
-        ? []
-        : [...element.children].map((child) => walk(child, depth + 1)),
-  });
-  return walk(root);
-    })
+  ? await page
+      .locator(".ds-message")
+      .last()
+      .evaluate((root) => {
+        const clean = (value) =>
+          String(value || "")
+            .replace(/\s+/g, " ")
+            .trim();
+        const walk = (element, depth = 0) => ({
+          tag: element.tagName.toLowerCase(),
+          class: element.getAttribute("class") || "",
+          text: clean(element.textContent).slice(0, 160),
+          children:
+            depth >= 5
+              ? []
+              : [...element.children].map((child) => walk(child, depth + 1)),
+        });
+        return walk(root);
+      })
   : null;
 const controls = await page
   .locator("textarea, [contenteditable='true'], button, [role='button']")
@@ -118,7 +166,9 @@ const controls = await page
         index,
         tag: element.tagName.toLowerCase(),
         class: element.getAttribute("class") || "",
-        text: String(element.textContent || "").replace(/\s+/g, " ").trim(),
+        text: String(element.textContent || "")
+          .replace(/\s+/g, " ")
+          .trim(),
         placeholder: element.getAttribute("placeholder") || "",
         ariaLabel: element.getAttribute("aria-label") || "",
         ariaPressed: element.getAttribute("aria-pressed") || "",
@@ -133,7 +183,13 @@ const controls = await page
       ),
   );
 const modeControls = [];
-for (const label of ["快速模式", "专家模式", "识图模式", "深度思考", "智能搜索"]) {
+for (const label of [
+  "快速模式",
+  "专家模式",
+  "识图模式",
+  "深度思考",
+  "智能搜索",
+]) {
   const matches = page.getByText(label, { exact: true });
   for (let index = 0; index < (await matches.count()); index += 1) {
     modeControls.push(
@@ -147,7 +203,9 @@ for (const label of ["快速模式", "专家模式", "识图模式", "深度思�
             role: current.getAttribute("role") || "",
             ariaPressed: current.getAttribute("aria-pressed") || "",
             tabindex: current.getAttribute("tabindex") || "",
-            text: String(current.textContent || "").replace(/\s+/g, " ").trim(),
+            text: String(current.textContent || "")
+              .replace(/\s+/g, " ")
+              .trim(),
           });
           current = current.parentElement;
         }
@@ -157,7 +215,10 @@ for (const label of ["快速模式", "专家模式", "识图模式", "深度思�
   }
 }
 
-await page.screenshot({ path: "/tmp/deepseek-dom-inspection.png", fullPage: false });
+await page.screenshot({
+  path: path.join(tmpdir(), "deepseek-dom-inspection.png"),
+  fullPage: false,
+});
 process.stdout.write(
   `${JSON.stringify({ url: page.url(), count, controls, modeControls, messageTree, nodes: result }, null, 2)}\n`,
 );

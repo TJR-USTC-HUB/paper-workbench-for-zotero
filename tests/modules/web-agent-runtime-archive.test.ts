@@ -15,7 +15,7 @@ describe("Web Agent runtime archive", () => {
       const options = {
         projectRoot: path.resolve("."),
         protocolVersion: 26,
-        repository: "xuhan-rgb/zotero-ai-sidebar",
+        repository: "TJR-USTC-HUB/paper-workbench-for-zotero",
       };
       vi.setSystemTime(new Date("2025-01-01T00:00:00Z"));
       const first = await buildWebAgentRuntimeRelease({
@@ -43,7 +43,11 @@ describe("Web Agent runtime archive", () => {
 
     expect(files["agent.mjs"]).toBeInstanceOf(Uint8Array);
     expect(files["firefox-session.mjs"]).toBeInstanceOf(Uint8Array);
-    expect(new TextDecoder().decode(files["node_modules/playwright-core/lib/coreBundle.js"])).toContain("Zotero: adopt Firefox's startup window");
+    expect(
+      new TextDecoder().decode(
+        files["node_modules/playwright-core/lib/coreBundle.js"],
+      ),
+    ).toContain("Zotero: adopt Firefox's startup window");
     expect(files["attachments.mjs"]).toBeInstanceOf(Uint8Array);
     expect(files["node_modules/playwright-core/index.mjs"]).toBeInstanceOf(
       Uint8Array,
@@ -61,15 +65,15 @@ describe("Web Agent runtime archive", () => {
       projectRoot: path.resolve("."),
       releaseVersion: addonVersion,
       protocolVersion: 26,
-      repository: "xuhan-rgb/zotero-ai-sidebar",
+      repository: "TJR-USTC-HUB/paper-workbench-for-zotero",
     });
 
     expect(release.assetName).toBe("zai-web-agent-runtime.zip");
     expect(release.downloadUrl).toBe(
-      `https://github.com/xuhan-rgb/zotero-ai-sidebar/releases/download/v${addonVersion}/zai-web-agent-runtime.zip`,
+      `https://github.com/TJR-USTC-HUB/paper-workbench-for-zotero/releases/download/v${addonVersion}/zai-web-agent-runtime.zip`,
     );
     expect(release.releaseUrl).toBe(
-      `https://github.com/xuhan-rgb/zotero-ai-sidebar/releases/tag/v${addonVersion}`,
+      `https://github.com/TJR-USTC-HUB/paper-workbench-for-zotero/releases/tag/v${addonVersion}`,
     );
     expect(release.size).toBe(release.archive.byteLength);
     expect(release.sha256).toBe(

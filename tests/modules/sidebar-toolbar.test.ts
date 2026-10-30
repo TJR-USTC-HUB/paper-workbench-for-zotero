@@ -89,17 +89,19 @@ describe("AI dialog toolbar", () => {
   });
 
   it("shows dismissible signatures only in the empty normal conversation", () => {
-    expect(messagesSource).toContain('state.messages.length === 0');
-    expect(messagesSource).toContain('messages.classList.add("messages-empty")');
-    expect(messagesSource).toContain('renderEmptySignatures(');
+    expect(messagesSource).toContain("state.messages.length === 0");
     expect(messagesSource).toContain(
-      'assistantSignaturesEnabled: false',
+      'messages.classList.add("messages-empty")',
     );
+    expect(messagesSource).toContain("renderEmptySignatures(");
+    expect(messagesSource).toContain("assistantSignaturesEnabled: false");
     expect(messagesSource).toContain(
-      'saveUiSettings(zoteroPrefs(), state.uiSettings)',
+      "saveUiSettings(zoteroPrefs(), state.uiSettings)",
     );
-    expect(sidebarCSS).toContain('.empty-signatures {');
-    expect(sidebarCSS).toContain('.empty-signatures:hover .empty-signature-close');
+    expect(sidebarCSS).toContain(".empty-signatures {");
+    expect(sidebarCSS).toContain(
+      ".empty-signatures:hover .empty-signature-close",
+    );
   });
 
   it("keeps the visible toolbar row draggable in a docked window", () => {
@@ -147,7 +149,7 @@ describe("AI dialog toolbar", () => {
       "controls.append(historyLabel, add, remove, copyAll, clear, menu)",
     );
     expect(conversationSource).toMatch(
-      /historyLabel\.prepend\(\s*el\(doc, "span", "conversation-history-label", uiText\("上下文", "Context"\)\)/,
+      /historyLabel\.prepend\(\s*el\(\s*doc,\s*"span",\s*"conversation-history-label",\s*uiText\(\s*"上下文",\s*"Context",?\s*\),?\s*\)/s,
     );
     expect(inputSource).toContain('"composer-attachment-menu"');
     expect(inputSource).toContain(
@@ -162,16 +164,12 @@ describe("AI dialog toolbar", () => {
   });
 
   it("does not expose DeepSeek or ChatGPT web mode selectors in the composer", () => {
-    expect(composerFooterSource).not.toContain(
-      "renderDeepSeekModeSwitcher",
-    );
+    expect(composerFooterSource).not.toContain("renderDeepSeekModeSwitcher");
     expect(composerFooterSource).not.toContain(
       "renderChatGPTReasoningSwitcher",
     );
     expect(sidebarSource).not.toContain("composer-deepseek-mode-select");
-    expect(sidebarSource).not.toContain(
-      "composer-chatgpt-reasoning-select",
-    );
+    expect(sidebarSource).not.toContain("composer-chatgpt-reasoning-select");
     expect(sidebarCSS).not.toContain(".composer-deepseek-mode-select");
     expect(sidebarCSS).not.toContain(".composer-chatgpt-reasoning-select");
     expect(composerFooterSource).not.toContain("renderDeepSeekOptionToggle");
@@ -261,8 +259,9 @@ describe("AI dialog toolbar", () => {
       'const deferActions = webProvider === "chatglm" && !!progress;',
     );
     expect(bubbleSource).toContain(
-      "if (!deferActions) head.append(actions);",
+      "!state.localUiSettings.selectionOnlyMode && !deferActions",
     );
+    expect(bubbleSource).toContain("head.append(actions)");
   });
 
   it("marks branch conversation tabs with their source conversation", () => {
@@ -360,7 +359,9 @@ describe("AI dialog toolbar", () => {
       'summary.addEventListener("click", (event) =>',
     );
     expect(sidebarSource).toContain("event.preventDefault()");
-    expect(compactMenuSource).toContain('if (menu.hasAttribute("open")) closeCompactMenu(menu)');
+    expect(compactMenuSource).toContain(
+      'if (menu.hasAttribute("open")) closeCompactMenu(menu)',
+    );
     expect(compactMenuSource).toContain('menu.setAttribute("open", "")');
   });
 
@@ -418,9 +419,7 @@ describe("AI dialog toolbar", () => {
     expect(sidebarCSS).toMatch(
       /\.composer-status-web-account\s*\{[^}]*overflow:\s*hidden;[^}]*text-overflow:\s*ellipsis;[^}]*white-space:\s*nowrap;/s,
     );
-    expect(
-      sidebarSource.match(/`\$\{providerName\} 已就绪`/g),
-    ).toHaveLength(2);
+    expect(sidebarSource.match(/`\$\{providerName\} 已就绪`/g)).toHaveLength(2);
     expect(sidebarCSS).toMatch(
       /\.input-row > \.composer-attachment-menu\s*\{[^}]*left:\s*10px;/s,
     );
@@ -476,12 +475,18 @@ describe("AI dialog toolbar", () => {
     expect(composerFooterSource).not.toContain("renderCustomWebProviderButton");
     expect(sidebarSource).toContain("state.localUiSettings.customWebProviders");
     expect(sidebarSource).toContain("customWebProviderFor(state, provider)");
-    expect(sidebarSource).toContain('option.value = "__manage_web_providers__"');
-    expect(sidebarSource).toContain('option.textContent = uiText("＋ 管理第三方网页…", "+ Manage custom websites…")');
+    expect(sidebarSource).toContain(
+      'option.value = "__manage_web_providers__"',
+    );
+    expect(sidebarSource).toMatch(
+      /option\.textContent\s*=\s*uiText\(\s*"＋ 管理第三方网页…",\s*"\+ Manage custom websites…",?\s*\)/s,
+    );
     expect(sidebarSource).toMatch(
       /if \(select\.value === "__manage_web_providers__"\) \{\s*select\.value = previousProvider;\s*configureCustomWebProvider\(doc, mount, state\);\s*return;/s,
     );
-    expect(sidebarSource).not.toContain("function renderCustomWebProviderButton(");
+    expect(sidebarSource).not.toContain(
+      "function renderCustomWebProviderButton(",
+    );
     expect(sidebarSource).not.toContain("function webSettingsIcon(");
     expect(sidebarCSS).not.toContain(".composer-web-provider-settings-button");
     expect(sidebarSource).toContain("ChatGPT 网页模式风险提示");
@@ -512,7 +517,9 @@ describe("AI dialog toolbar", () => {
     expect(inputSource).toContain(
       '"发送到 Web Prompt Hub；未登录时会提示配置网页账号"',
     );
-    expect(inputSource).not.toContain("send.disabled = !canSubmit || !webAccountReady");
+    expect(inputSource).not.toContain(
+      "send.disabled = !canSubmit || !webAccountReady",
+    );
   });
 
   it("keeps model, reasoning, and YOLO controls directly accessible", () => {
@@ -522,7 +529,9 @@ describe("AI dialog toolbar", () => {
       /renderModelSwitcher\(doc, mount, state\),\s*renderComposerReasoningSelect\(.*renderYoloToggle\(doc, mount, state\)/s,
     );
     expect(composerFooterSource).not.toContain("renderReasoningSwitcher");
-    expect(sidebarSource).not.toContain('className = "reasoning-switcher-trigger"');
+    expect(sidebarSource).not.toContain(
+      'className = "reasoning-switcher-trigger"',
+    );
     expect(composerFooterSource).toContain("renderSendTargetSwitcher");
     expect(composerFooterSource).toContain(
       'state.localUiSettings.chatSendMode === "api"',
@@ -534,22 +543,22 @@ describe("AI dialog toolbar", () => {
     expect(composerFooterSource).toContain(
       "footer.append(sendMode, actions, left)",
     );
-    expect(sidebarSource).not.toContain("Ln ${cursor.line}, Col ${cursor.column}");
+    expect(sidebarSource).not.toContain(
+      "Ln ${cursor.line}, Col ${cursor.column}",
+    );
     expect(sidebarSource).not.toContain("function cursorPosition(");
   });
 });
-
 
 describe("composer reasoning entry", () => {
   it("mounts a reasoning selector alongside the API model selector", () => {
     const apiControls = composerFooterSource.slice(
       composerFooterSource.indexOf('chatSendMode === "api"'),
-      composerFooterSource.indexOf('} else {'),
+      composerFooterSource.indexOf("} else {"),
     );
-    expect(apiControls).toContain('renderComposerReasoningSelect(');
+    expect(apiControls).toContain("renderComposerReasoningSelect(");
   });
 });
-
 
 describe("wrapping composer footer", () => {
   it("uses the account name in narrow composers while retaining full native options", () => {
@@ -557,26 +566,36 @@ describe("wrapping composer footer", () => {
       sidebarSource.indexOf("function renderPresetSwitcher("),
       sidebarSource.indexOf("function renderWebSearchSwitcher("),
     );
-    expect(switcher).toContain('wrap.dataset.accountLabel = activePreset?.label ?? ""');
-    expect(switcher).toContain("option.textContent = presetSelectLabel(preset)");
+    expect(switcher).toContain(
+      'wrap.dataset.accountLabel = activePreset?.label ?? ""',
+    );
+    expect(switcher).toContain(
+      "option.textContent = presetSelectLabel(preset)",
+    );
     expect(switcher).toContain("presetSelectLabel(activePreset)");
     expect(sidebarCSS).toMatch(/container:\s*composer-width \/ inline-size/);
-    expect(sidebarCSS).toMatch(/@container composer-width \(max-width: 600px\)/);
+    expect(sidebarCSS).toMatch(
+      /@container composer-width \(max-width: 600px\)/,
+    );
     expect(sidebarCSS).toContain("content: attr(data-account-label)");
-    expect(sidebarCSS).toMatch(/\.composer-preset-select option\s*\{[^}]*color:\s*var\(--zai-text\)/s);
+    expect(sidebarCSS).toMatch(
+      /\.composer-preset-select option\s*\{[^}]*color:\s*var\(--zai-text\)/s,
+    );
   });
   it("allows API controls to wrap when space is limited", () => {
     const style = document.createElement("style");
     style.textContent = sidebarCSS;
     const row = document.createElement("div");
     row.className = "composer-footer-actions composer-footer-actions-api";
-    row.innerHTML = '<div class="composer-preset-switcher"></div><div class="model-switcher"><span class="model-switcher-label">long-model-name</span></div>';
+    row.innerHTML =
+      '<div class="composer-preset-switcher"></div><div class="model-switcher"><span class="model-switcher-label">long-model-name</span></div>';
     document.head.append(style);
     document.body.append(row);
     try {
       expect(getComputedStyle(row).flexWrap).toBe("wrap");
     } finally {
-      row.remove(); style.remove();
+      row.remove();
+      style.remove();
     }
   });
 });

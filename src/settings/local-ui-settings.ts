@@ -15,6 +15,7 @@ export interface LocalUiSettings {
   sidebarDisplayMode: SidebarDisplayMode;
   noteWindowMode: NoteWindowMode;
   dockedTightLayout: boolean;
+  selectionOnlyMode: boolean;
   floatingPanels: FloatingPanelLayout;
   fullTranslationReading: FullTranslationReadingSettings;
 }
@@ -22,12 +23,7 @@ export interface LocalUiSettings {
 export type ChatLayout = "classic" | "compact";
 export type ChatSendMode = "api" | "web";
 export type WebPromptProvider =
-  | "chatgpt"
-  | "deepseek"
-  | "chatglm"
-  | "zai"
-  | "kimi"
-  | `custom:${string}`;
+  "chatgpt" | "deepseek" | "chatglm" | "zai" | "kimi" | `custom:${string}`;
 export type CustomWebProviderTemplate = "chatgpt-like";
 export interface CustomWebProviderSelectors {
   composer: string[];
@@ -77,22 +73,13 @@ export const DEFAULT_FLOATING_PANEL_LAYOUT: FloatingPanelLayout = {
 };
 
 export type FullTranslationLanguageMode =
-  | "bilingual"
-  | "translation"
-  | "source";
+  "bilingual" | "translation" | "source";
 export type FullTranslationReadingLayout = "parallel" | "interleaved";
 export type FullTranslationMarkerStyle =
-  | "slashes"
-  | "circled"
-  | "decimal"
-  | "dot"
-  | "custom"
-  | "off";
+  "slashes" | "circled" | "decimal" | "dot" | "custom" | "off";
 export type FullTranslationMarkerColorMode = "palette" | "single";
 export type FullTranslationLineBreakMode =
-  | "continuous"
-  | "sentence"
-  | "sentence-semicolon";
+  "continuous" | "sentence" | "sentence-semicolon";
 export type FullTranslationFontFamily = "system" | "serif" | "sans";
 
 export interface FullTranslationReadingSettings {
@@ -143,6 +130,9 @@ export const DEFAULT_LOCAL_UI_SETTINGS: LocalUiSettings = {
   sidebarDisplayMode: "embedded",
   noteWindowMode: "inline",
   dockedTightLayout: false,
+  // This workstation build defaults to the focused paper workbench. Existing
+  // profiles can still opt out explicitly by persisting `false`.
+  selectionOnlyMode: true,
   floatingPanels: DEFAULT_FLOATING_PANEL_LAYOUT,
   fullTranslationReading: DEFAULT_FULL_TRANSLATION_READING_SETTINGS,
 };
@@ -178,9 +168,11 @@ export function normalizeLocalUiSettings(value: unknown): LocalUiSettings {
     value && typeof value === "object"
       ? (value as Partial<LocalUiSettings>)
       : {};
-  const legacyTarget = (input as Partial<LocalUiSettings> & {
-    chatSendTarget?: unknown;
-  }).chatSendTarget;
+  const legacyTarget = (
+    input as Partial<LocalUiSettings> & {
+      chatSendTarget?: unknown;
+    }
+  ).chatSendTarget;
   const normalizedCustomWebProviders = normalizeCustomWebProviders(
     input.customWebProviders,
   );
@@ -232,6 +224,10 @@ export function normalizeLocalUiSettings(value: unknown): LocalUiSettings {
       typeof input.dockedTightLayout === "boolean"
         ? input.dockedTightLayout
         : DEFAULT_LOCAL_UI_SETTINGS.dockedTightLayout,
+    selectionOnlyMode:
+      typeof input.selectionOnlyMode === "boolean"
+        ? input.selectionOnlyMode
+        : DEFAULT_LOCAL_UI_SETTINGS.selectionOnlyMode,
     floatingPanels: normalizeFloatingPanelLayout(input.floatingPanels),
     fullTranslationReading: normalizeFullTranslationReadingSettings(
       input.fullTranslationReading,
@@ -241,8 +237,7 @@ export function normalizeLocalUiSettings(value: unknown): LocalUiSettings {
 
 export function usesNativeNoteWindow(
   settings:
-    | Pick<LocalUiSettings, "sidebarDisplayMode" | "noteWindowMode">
-    | undefined,
+    Pick<LocalUiSettings, "sidebarDisplayMode" | "noteWindowMode"> | undefined,
 ): boolean {
   return (
     settings?.sidebarDisplayMode === "floating" ||
@@ -298,7 +293,8 @@ function normalizeCustomWebProviders(value: unknown): CustomWebProvider[] {
       id === "deepseek" ||
       id === "chatglm" ||
       id === "kimi"
-    ) continue;
+    )
+      continue;
     const name = cleanProviderText(input.name, 80);
     const homeUrl = normalizeProviderUrl(input.homeUrl);
     const newConversationUrl = normalizeProviderUrl(
@@ -315,10 +311,18 @@ function normalizeCustomWebProviders(value: unknown): CustomWebProvider[] {
       stop: normalizeSelectorList(rawSelectors.stop),
       answers: normalizeSelectorList(rawSelectors.answers),
       reasoning: normalizeSelectorList(rawSelectors.reasoning),
-      attachmentPreviews: normalizeSelectorList(rawSelectors.attachmentPreviews),
-      attachmentUploading: normalizeSelectorList(rawSelectors.attachmentUploading),
+      attachmentPreviews: normalizeSelectorList(
+        rawSelectors.attachmentPreviews,
+      ),
+      attachmentUploading: normalizeSelectorList(
+        rawSelectors.attachmentUploading,
+      ),
     };
-    if (!selectors.composer.length || !selectors.send.length || !selectors.answers.length) {
+    if (
+      !selectors.composer.length ||
+      !selectors.send.length ||
+      !selectors.answers.length
+    ) {
       continue;
     }
     seen.add(id);
@@ -346,7 +350,11 @@ function isLegacyKimiCustomProvider(provider: CustomWebProvider): boolean {
 
 function cleanProviderText(value: unknown, maxLength: number): string {
   if (typeof value !== "string") return "";
-  return value.replace(/\p{Cc}/gu, "").replace(/\s+/g, " ").trim().slice(0, maxLength);
+  return value
+    .replace(/\p{Cc}/gu, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLength);
 }
 
 function normalizeProviderUrl(value: unknown): string {
@@ -368,15 +376,17 @@ function normalizeSelectorList(value: unknown): string[] {
     if (typeof selector !== "string") continue;
     for (const part of legacyJoinedSelectorParts(selector)) {
       const cleaned = part.replace(/\p{Cc}/gu, "").trim();
-    if (
-      !cleaned ||
-      cleaned.length > 240 ||
-      /(?:javascript:|<script|=>|\b(eval| Function|setTimeout|setInterval)\s*\()/i.test(cleaned)
-    ) {
-      continue;
-    }
-    if (!result.includes(cleaned)) result.push(cleaned);
-    if (result.length >= 24) break;
+      if (
+        !cleaned ||
+        cleaned.length > 240 ||
+        /(?:javascript:|<script|=>|\b(eval| Function|setTimeout|setInterval)\s*\()/i.test(
+          cleaned,
+        )
+      ) {
+        continue;
+      }
+      if (!result.includes(cleaned)) result.push(cleaned);
+      if (result.length >= 24) break;
     }
     if (result.length >= 24) break;
   }
@@ -385,12 +395,16 @@ function normalizeSelectorList(value: unknown): string[] {
 
 function legacyJoinedSelectorParts(selector: string): string[] {
   const joinedDefaults: Record<string, string[]> = {
-    "textarea[contenteditable='true']": ["textarea", "[contenteditable='true']"],
-    "button[type='submit']button[aria-label*='Send']button[aria-label*='发送']": [
-      "button[type='submit']",
-      "button[aria-label*='Send']",
-      "button[aria-label*='发送']",
+    "textarea[contenteditable='true']": [
+      "textarea",
+      "[contenteditable='true']",
     ],
+    "button[type='submit']button[aria-label*='Send']button[aria-label*='发送']":
+      [
+        "button[type='submit']",
+        "button[aria-label*='Send']",
+        "button[aria-label*='发送']",
+      ],
     "button[aria-label*='Stop']button[aria-label*='停止']": [
       "button[aria-label*='Stop']",
       "button[aria-label*='停止']",
@@ -507,9 +521,7 @@ function normalizeFloatingPanelRect(
 }
 
 function normalizePanelPosition(value: unknown): number | null {
-  return typeof value === "number" && Number.isFinite(value)
-    ? value
-    : null;
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
 export function normalizeFullTranslationReadingSettings(

@@ -7,9 +7,9 @@ body:
   - type: markdown
     attributes:
       value: |-
-        Need Chinese? Use the [Chinese form](https://github.com/xuhan-rgb/zotero-ai-sidebar/issues/new?template=usage-question.yml).
+        Need Chinese? Use the [Chinese form](https://github.com/TJR-USTC-HUB/paper-workbench-for-zotero/issues/new?template=usage-question.yml).
 
-        Before asking, check the [usage guide](https://github.com/xuhan-rgb/zotero-ai-sidebar/blob/master/docs/USAGE.md#troubleshooting) troubleshooting section and “Usage notes” in the sidebar.
+        Before asking, check the [usage guide](https://github.com/TJR-USTC-HUB/paper-workbench-for-zotero/blob/main/docs/USAGE.md#troubleshooting) troubleshooting section and “Usage notes” in the sidebar.
   - type: checkboxes
     id: preflight
     attributes:

@@ -1,24 +1,24 @@
 {
-  "name": "zotero-ai-sidebar",
+  "name": "paper-workbench-for-zotero",
   "type": "module",
-  "version": "0.8.20",
-  "description": "AI research sidebar for Zotero with API and local browser-backed web chat modes.",
+  "version": "0.8.20.11",
+  "description": "Unofficial community add-on for Zotero: a cross-platform three-column PDF workspace with selection translation, notes, and OpenAI-compatible AI chat.",
   "config": {
-    "addonName": "Zotero AI Sidebar",
-    "addonID": "zotero-ai-sidebar@local",
+    "addonName": "Paper Workbench for Zotero",
+    "addonID": "paper-workbench-for-zotero@tjr-ustc-hub",
     "addonRef": "zotero-ai-sidebar",
     "addonInstance": "ZoteroAISidebar",
     "prefsPrefix": "extensions.zotero-ai-sidebar"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/xuhan-rgb/zotero-ai-sidebar.git"
+    "url": "git+https://github.com/TJR-USTC-HUB/paper-workbench-for-zotero.git"
   },
-  "author": "qwer",
+  "author": "TJR-USTC-HUB contributors",
   "bugs": {
-    "url": "https://github.com/xuhan-rgb/zotero-ai-sidebar/issues"
+    "url": "https://github.com/TJR-USTC-HUB/paper-workbench-for-zotero/issues"
   },
-  "homepage": "https://github.com/xuhan-rgb/zotero-ai-sidebar#readme",
+  "homepage": "https://github.com/TJR-USTC-HUB/paper-workbench-for-zotero#readme",
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "prepare:web-agent": "npm ci --prefix web-agent --omit=dev --ignore-scripts && node scripts/patch-playwright-firefox.mjs",
@@ -26,6 +26,7 @@
     "start": "zotero-plugin serve",
     "prebuild": "npm run prepare:web-agent",
     "build": "zotero-plugin build && tsc --noEmit",
+    "check:public": "prettier --check README.md README.zh-CN.md CHANGELOG.md CHANGELOG.zh-CN.md NOTICE.md package.json .github/ISSUE_TEMPLATE .github/workflows docs/USAGE.md docs/USAGE.zh-CN.md docs/RELEASE.md scripts/dev-browser-paths.mjs scripts/inspect-deepseek-dom.mjs scripts/live-test-deepseek-agent.mjs && eslint scripts/dev-browser-paths.mjs scripts/inspect-deepseek-dom.mjs scripts/live-test-deepseek-agent.mjs",
     "lint:check": "prettier --check . && eslint .",
     "lint:fix": "prettier --write . && eslint . --fix",
     "release": "zotero-plugin release",
@@ -41,7 +42,7 @@
     "@anthropic-ai/sdk": "^0.91.1",
     "@dagrejs/dagre": "^3.0.0",
     "fflate": "^0.8.3",
-    "katex": "^0.16.45",
+    "katex": "^0.19.1",
     "openai": "^6.35.0",
     "qrcode-generator": "^1.4.4",
     "react": "^19.2.5",

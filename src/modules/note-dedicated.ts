@@ -38,9 +38,7 @@ export async function createParentForStandalonePDF(
   const parent = new ZItem("document") as Zotero.Item;
   parent.libraryID = pdf.libraryID;
   const title =
-    (pdf as any).getField?.("title") ||
-    (pdf as any).getDisplayTitle?.() ||
-    "";
+    (pdf as any).getField?.("title") || (pdf as any).getDisplayTitle?.() || "";
   if (title) (parent as any).setField?.("title", title);
   const collectionIDs = (pdf as any).getCollections?.() as number[] | undefined;
   if (collectionIDs?.length) (parent as any).setCollections?.(collectionIDs);
@@ -72,10 +70,7 @@ export function childNotesForItem(item: Zotero.Item): Zotero.Item[] {
   const ids = getNotes.call(item);
   if (!Array.isArray(ids) || ids.length === 0) return [];
   const notes = Zotero.Items.get(ids as number[]) as
-    | Zotero.Item[]
-    | Zotero.Item
-    | false
-    | undefined;
+    Zotero.Item[] | Zotero.Item | false | undefined;
   const items = Array.isArray(notes) ? notes : notes ? [notes] : [];
   return items.filter(isZoteroNote);
 }
@@ -83,16 +78,40 @@ export function childNotesForItem(item: Zotero.Item): Zotero.Item[] {
 export function isZoteroNote(
   item: Zotero.Item | null | undefined,
 ): item is Zotero.Item {
-  return !!item && (item as Zotero.Item & { isNote?: () => boolean }).isNote?.();
+  return (
+    !!item && (item as Zotero.Item & { isNote?: () => boolean }).isNote?.()
+  );
 }
 
-export async function createChildNote(parent: Zotero.Item): Promise<Zotero.Item> {
+export async function createChildNote(
+  parent: Zotero.Item,
+): Promise<Zotero.Item> {
   return createNamedChildNote(parent, AI_NOTE_TITLE, "ai");
 }
 
+/** Create a regular child note without claiming the dedicated AI-note slot. */
+export async function createUserChildNote(
+  itemID: number | null,
+  title: string,
+): Promise<Zotero.Item> {
+  if (itemID == null) throw new Error("未选择 Zotero 条目");
+  const item = getZoteroItem(itemID);
+  if (!item) throw new Error(`找不到 Zotero 条目 #${itemID}`);
+  const parent = await parentItemForDedicatedNotes(item);
+  const note = new (
+    Zotero as unknown as { Item: new (type: string) => any }
+  ).Item("note") as Zotero.Item;
+  note.libraryID = parent.libraryID;
+  (note as Zotero.Item & { parentID?: number }).parentID = parent.id;
+  note.setNote(`<h1>${escapeHTML(title)}</h1><p></p>`);
+  await note.saveTx();
+  return note;
+}
+
 export function noteTitle(note: Zotero.Item): string {
-  const title = (note as Zotero.Item & { getNoteTitle?: () => string })
-    .getNoteTitle?.();
+  const title = (
+    note as Zotero.Item & { getNoteTitle?: () => string }
+  ).getNoteTitle?.();
   return title || `Zotero 笔记 #${note.id}`;
 }
 
@@ -187,7 +206,9 @@ async function noteFromDedicatedPointer(pointer: {
       // Fall back to the local numeric ID below.
     }
   }
-  return typeof pointer.noteID === "number" ? getZoteroItem(pointer.noteID) : null;
+  return typeof pointer.noteID === "number"
+    ? getZoteroItem(pointer.noteID)
+    : null;
 }
 
 function saveDedicatedNoteLink(
@@ -208,7 +229,10 @@ function saveDedicatedNoteLink(
   zoteroPrefs().set(DEDICATED_NOTE_LINKS_KEY, JSON.stringify(links));
 }
 
-function clearDedicatedNoteLink(parent: Zotero.Item, kind: DedicatedNoteKind): void {
+function clearDedicatedNoteLink(
+  parent: Zotero.Item,
+  kind: DedicatedNoteKind,
+): void {
   const links = loadDedicatedNoteLinks();
   const parentKey = dedicatedParentKey(parent);
   if (!links[parentKey]?.[kind]) return;
@@ -236,7 +260,9 @@ function loadDedicatedNoteLinks(): Record<
 }
 
 function dedicatedParentKey(parent: Zotero.Item): string {
-  return itemURI(parent) || `local:${parent.libraryID}:${parent.key ?? parent.id}`;
+  return (
+    itemURI(parent) || `local:${parent.libraryID}:${parent.key ?? parent.id}`
+  );
 }
 
 function itemURI(item: Zotero.Item): string {
@@ -250,17 +276,21 @@ function itemURI(item: Zotero.Item): string {
 export function itemParentID(item: Zotero.Item): number | null {
   const direct = (item as Zotero.Item & { parentID?: number | false }).parentID;
   if (typeof direct === "number") return direct;
-  const source = (item as Zotero.Item & { getSource?: () => unknown })
-    .getSource?.();
+  const source = (
+    item as Zotero.Item & { getSource?: () => unknown }
+  ).getSource?.();
   return typeof source === "number" ? source : null;
 }
 
 function noteBelongsToParent(note: Zotero.Item, parent: Zotero.Item): boolean {
   const parentID = itemParentID(note);
   if (parentID === parent.id) return true;
-  const childIDs = (parent as Zotero.Item & { getNotes?: () => unknown })
-    .getNotes?.();
-  return Array.isArray(childIDs) && childIDs.some((id) => Number(id) === note.id);
+  const childIDs = (
+    parent as Zotero.Item & { getNotes?: () => unknown }
+  ).getNotes?.();
+  return (
+    Array.isArray(childIDs) && childIDs.some((id) => Number(id) === note.id)
+  );
 }
 
 function isLinkedDedicatedNote(
@@ -268,9 +298,7 @@ function isLinkedDedicatedNote(
   parent: Zotero.Item,
 ): note is Zotero.Item {
   return (
-    isZoteroNote(note) &&
-    !note.deleted &&
-    noteBelongsToParent(note, parent)
+    isZoteroNote(note) && !note.deleted && noteBelongsToParent(note, parent)
   );
 }
 
@@ -280,8 +308,7 @@ function isMarkedDedicatedNote(
   kind: DedicatedNoteKind,
 ): note is Zotero.Item {
   return (
-    isLinkedDedicatedNote(note, parent) &&
-    hasDedicatedNoteMarker(note, kind)
+    isLinkedDedicatedNote(note, parent) && hasDedicatedNoteMarker(note, kind)
   );
 }
 
@@ -300,8 +327,7 @@ export function hasDedicatedNoteMarker(
   const html = note.getNote?.() || "";
   const marker = dedicatedNoteMarkerValue(kind);
   return (
-    html.includes(`data-zai-dedicated-note="${kind}"`) ||
-    html.includes(marker)
+    html.includes(`data-zai-dedicated-note="${kind}"`) || html.includes(marker)
   );
 }
 
@@ -393,7 +419,10 @@ export function dedicatedNoteMarker(
 ): HTMLElement {
   const marker = doc.createElement("span");
   marker.setAttribute("data-zai-dedicated-note", kind);
-  marker.setAttribute("data-zai-dedicated-marker", dedicatedNoteMarkerValue(kind));
+  marker.setAttribute(
+    "data-zai-dedicated-marker",
+    dedicatedNoteMarkerValue(kind),
+  );
   return marker;
 }
 
@@ -406,7 +435,9 @@ export async function resolveReadingRouteNote(
 export async function findReadingRouteNote(
   itemID: number | null,
 ): Promise<Zotero.Item | null> {
-  return (await resolveDedicatedNote(itemID, "readingRoute", false))?.note ?? null;
+  return (
+    (await resolveDedicatedNote(itemID, "readingRoute", false))?.note ?? null
+  );
 }
 
 async function parentItemForDedicatedNotes(
@@ -442,14 +473,12 @@ async function createNamedChildNote(
   title: string,
   kind: DedicatedNoteKind,
 ): Promise<Zotero.Item> {
-  const note = new (Zotero as unknown as { Item: new (type: string) => any }).Item(
-    "note",
-  ) as Zotero.Item;
+  const note = new (
+    Zotero as unknown as { Item: new (type: string) => any }
+  ).Item("note") as Zotero.Item;
   note.libraryID = parent.libraryID;
   (note as Zotero.Item & { parentID?: number }).parentID = parent.id;
-  note.setNote(
-    `<h1>${dedicatedNoteMarkerHTML(kind)}${escapeHTML(title)}</h1>`,
-  );
+  note.setNote(`<h1>${dedicatedNoteMarkerHTML(kind)}${escapeHTML(title)}</h1>`);
   await note.saveTx();
   return note;
 }

@@ -1,6 +1,28 @@
 # Changelog
 
-Version history. For published builds and release details, see [GitHub Releases](https://github.com/xuhan-rgb/zotero-ai-sidebar/releases); [中文](CHANGELOG.zh-CN.md).
+Version history. For published builds and release details, see [GitHub Releases](https://github.com/TJR-USTC-HUB/paper-workbench-for-zotero/releases); [中文](CHANGELOG.zh-CN.md).
+
+## v0.8.20.11
+
+- **Paper Workbench public release**: publish the add-on under its new
+  cross-platform community identity while preserving upstream history,
+  AGPL-3.0-or-later licensing, and the existing preference namespace.
+- **Resizable three-column reader**: keep the PDF, automatic selection
+  translation, and the note/chat workspace in separate non-overlapping columns.
+  Drag both vertical boundaries and the note/chat divider; saved dimensions are
+  restored later.
+- **Focused notes and chat**: choose or create a note, save it before switching,
+  closing, or changing papers, and expand chat to the full work column when the
+  note closes. Conversation messages use a compact, warm neutral chat layout.
+- **Endpoint-first sign-in**: begin signed out, accept only Base URL and API Key,
+  discover `/models`, prefer `gpt-6.1-sol` when available, verify connectivity,
+  and then expose model and reasoning-strength controls in the conversation.
+- **Selection-only requests**: automatic translation and AI explanations use the
+  live PDF selection. Focused chat does not attach full papers, nearby text,
+  previous turns, web search, tools, or other Zotero items.
+- **Release hardening**: add Windows/macOS/Linux CI, portable development
+  scripts, updated bilingual documentation, corrected release assets, dependency
+  security updates, and credential scans for the public XPI.
 
 ## v0.8.20
 

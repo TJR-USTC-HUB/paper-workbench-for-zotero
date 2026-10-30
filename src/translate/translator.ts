@@ -7,15 +7,17 @@ import type {
 } from "../settings/types";
 import { promptText } from "../utils/prompt-locale";
 
-const SYSTEM_PROMPT = () => promptText(
-  "英译中。准确、通顺，采用自然的中文学术表达；保持原文逻辑与句间衔接，不要逐词硬译。完整保留术语、缩写、变量、上下标、公式、集合符号及公式编号，不要改写或拆散公式。只输出简体中文译文。",
-  "Translate the English source into Chinese. Produce an accurate, fluent translation in natural academic Chinese, preserving the source logic and connections between sentences rather than translating word for word. Preserve terminology, abbreviations, variables, subscripts and superscripts, formulas, set symbols, and equation numbers exactly; do not rewrite or split formulas. Output only the Simplified Chinese translation.",
-);
+const SYSTEM_PROMPT = () =>
+  promptText(
+    "英译中。准确、通顺，采用自然的中文学术表达；保持原文逻辑与句间衔接，不要逐词硬译。完整保留术语、缩写、变量、上下标、公式、集合符号及公式编号，不要改写或拆散公式。只输出简体中文译文。",
+    "Translate the English source into Chinese. Produce an accurate, fluent translation in natural academic Chinese, preserving the source logic and connections between sentences rather than translating word for word. Preserve terminology, abbreviations, variables, subscripts and superscripts, formulas, set symbols, and equation numbers exactly; do not rewrite or split formulas. Output only the Simplified Chinese translation.",
+  );
 
-const STRICT_SYSTEM_PROMPT = () => promptText(
-  "英译中。准确、通顺，采用自然的中文学术表达；完整保留变量、上下标、公式、集合符号及公式编号。只输出含中文的译文，不要英文改写、解释或引号。",
-  "Translate the English source into accurate, fluent academic Chinese. Preserve variables, subscripts and superscripts, formulas, set symbols, and equation numbers exactly. Output only the Chinese translation; do not paraphrase in English, explain, or add quotation marks.",
-);
+const STRICT_SYSTEM_PROMPT = () =>
+  promptText(
+    "英译中。准确、通顺，采用自然的中文学术表达；完整保留变量、上下标、公式、集合符号及公式编号。只输出含中文的译文，不要英文改写、解释或引号。",
+    "Translate the English source into accurate, fluent academic Chinese. Preserve variables, subscripts and superscripts, formulas, set symbols, and equation numbers exactly. Output only the Chinese translation; do not paraphrase in English, explain, or add quotation marks.",
+  );
 const TRANSLATE_CONTEXT_CHAR_LIMIT = 600;
 const TRANSLATE_MAX_OUTPUT_TOKENS = 384;
 
@@ -26,6 +28,7 @@ export interface TranslateRequest {
   preset: ModelPreset;
   model: string;
   thinking: TranslateThinking;
+  maxOutputTokens?: number;
   signal: AbortSignal;
 }
 
@@ -64,13 +67,14 @@ const THINKING_TO_EFFORT: Record<TranslateThinking, ReasoningEffort> = {
 export function buildTranslatePreset(req: TranslateRequest): ModelPreset {
   const model = req.model || req.preset.model;
   if (req.preset.provider === "openai") {
+    const outputLimit = Math.max(
+      TRANSLATE_MAX_OUTPUT_TOKENS,
+      Math.round(req.maxOutputTokens ?? TRANSLATE_MAX_OUTPUT_TOKENS),
+    );
     return {
       ...req.preset,
       model,
-      maxTokens: Math.min(
-        req.preset.maxTokens || TRANSLATE_MAX_OUTPUT_TOKENS,
-        TRANSLATE_MAX_OUTPUT_TOKENS,
-      ),
+      maxTokens: Math.min(req.preset.maxTokens || outputLimit, outputLimit),
       extras: {
         ...req.preset.extras,
         reasoningEffort: THINKING_TO_EFFORT[req.thinking],
@@ -84,7 +88,11 @@ export function buildTranslatePreset(req: TranslateRequest): ModelPreset {
   return {
     ...req.preset,
     model,
-    maxTokens: anthropicTranslateMaxTokens(req.preset, req.thinking),
+    maxTokens: anthropicTranslateMaxTokens(
+      req.preset,
+      req.thinking,
+      req.maxOutputTokens,
+    ),
     extras: {
       ...req.preset.extras,
       translateThinking: req.thinking,
@@ -99,23 +107,28 @@ export function buildTranslatePreset(req: TranslateRequest): ModelPreset {
 function anthropicTranslateMaxTokens(
   preset: ModelPreset,
   level: TranslateThinking,
+  requestedOutputTokens = TRANSLATE_MAX_OUTPUT_TOKENS,
 ): number {
   const vendor = preset.extras?.vendor ?? "compat";
+  const visibleOutputTokens = Math.max(
+    TRANSLATE_MAX_OUTPUT_TOKENS,
+    Math.round(requestedOutputTokens),
+  );
   // No thinking → no need to grow the cap; keep it at the OpenAI-equivalent
   // tight ceiling. Same for compat vendor (already non-thinking).
   if (vendor === "compat" || level === "off") {
     return Math.min(
-      preset.maxTokens || TRANSLATE_MAX_OUTPUT_TOKENS,
-      TRANSLATE_MAX_OUTPUT_TOKENS,
+      preset.maxTokens || visibleOutputTokens,
+      visibleOutputTokens,
     );
   }
   // For Claude old-mode (enabled+budget_tokens), the budget must be < max_tokens.
   // Pad max_tokens above the budget to leave room for the visible reply.
   const budgetCeiling: Record<Exclude<TranslateThinking, "off">, number> = {
-    low: 1024 + TRANSLATE_MAX_OUTPUT_TOKENS,
-    medium: 2048 + TRANSLATE_MAX_OUTPUT_TOKENS,
-    high: 4096 + TRANSLATE_MAX_OUTPUT_TOKENS,
-    xhigh: 8192 + TRANSLATE_MAX_OUTPUT_TOKENS,
+    low: 1024 + visibleOutputTokens,
+    medium: 2048 + visibleOutputTokens,
+    high: 4096 + visibleOutputTokens,
+    xhigh: 8192 + visibleOutputTokens,
   };
   return Math.max(budgetCeiling[level], 4096);
 }

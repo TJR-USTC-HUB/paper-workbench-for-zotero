@@ -24,40 +24,58 @@ const preset = (
 });
 
 describe("model reasoning capabilities", () => {
-  it.each(["high", "max"] as const)("keeps %s when switching between DeepSeek models", (effort) => {
-    const current: ModelPreset = {
-      ...preset("deepseek-v4-flash"),
-      extras: {
-        reasoningEffortByModel: {
-          "deepseek-v4-flash": effort,
-          "deepseek-v4-pro": effort === "high" ? "max" : "high",
+  it.each(["high", "max"] as const)(
+    "keeps %s when switching between DeepSeek models",
+    (effort) => {
+      const current: ModelPreset = {
+        ...preset("deepseek-v4-flash"),
+        extras: {
+          reasoningEffortByModel: {
+            "deepseek-v4-flash": effort,
+            "deepseek-v4-pro": effort === "high" ? "max" : "high",
+          },
         },
-      },
-    };
-    const next = withModelPreservingReasoningEffort(current, "deepseek-v4-pro");
-    expect(next.model).toBe("deepseek-v4-pro");
-    expect(effectiveReasoningEffort(next)).toBe(effort);
-    expect(effectiveReasoningEffort(
-      withModelPreservingReasoningEffort(next, "deepseek-v4-flash"),
-    )).toBe(effort);
-    expect(current.extras?.reasoningEffortByModel?.["deepseek-v4-pro"]).toBe(
-      effort === "high" ? "max" : "high",
-    );
-  });
+      };
+      const next = withModelPreservingReasoningEffort(
+        current,
+        "deepseek-v4-pro",
+      );
+      expect(next.model).toBe("deepseek-v4-pro");
+      expect(effectiveReasoningEffort(next)).toBe(effort);
+      expect(
+        effectiveReasoningEffort(
+          withModelPreservingReasoningEffort(next, "deepseek-v4-flash"),
+        ),
+      ).toBe(effort);
+      expect(current.extras?.reasoningEffortByModel?.["deepseek-v4-pro"]).toBe(
+        effort === "high" ? "max" : "high",
+      );
+    },
+  );
 
   it("maps the carried effort only when the target model does not support it", () => {
     const current: ModelPreset = {
       ...preset("gpt-5.6-sol"),
       extras: { reasoningEffortByModel: { "gpt-5.6-sol": "medium" } },
     };
-    const next = withModelPreservingReasoningEffort(current, "deepseek-v4-flash");
+    const next = withModelPreservingReasoningEffort(
+      current,
+      "deepseek-v4-flash",
+    );
     expect(effectiveReasoningEffort(next)).toBe("high");
-    expect(effectiveReasoningEffort(
-      withModelPreservingReasoningEffort(current, "unknown-model"),
-    )).toBeUndefined();
+    expect(
+      effectiveReasoningEffort(
+        withModelPreservingReasoningEffort(current, "unknown-model"),
+      ),
+    ).toBeUndefined();
   });
 
   it.each([
+    [
+      "gpt-6.1-sol",
+      "openai",
+      ["none", "low", "medium", "high", "xhigh", "max"],
+    ],
     [
       "gpt-5.6-sol",
       "openai",
@@ -152,6 +170,7 @@ describe("model reasoning capabilities", () => {
 
 describe("balanced defaults", () => {
   it.each([
+    ["gpt-6.1-sol", "openai", "medium"],
     ["gpt-5.6-sol", "openai", "medium"],
     ["gpt-5.3-codex", "openai", "medium"],
     ["claude-opus-4-7", "anthropic", "medium"],
